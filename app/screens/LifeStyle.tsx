@@ -12,7 +12,9 @@ import {
   TextInput,
   SafeAreaView,
   StatusBar,
+  BackHandler,
 } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../../type";
 import Icon from "react-native-vector-icons/MaterialIcons";
@@ -70,6 +72,33 @@ const LifeStyleMonitoring: React.FC<WalkingProps> = ({ navigation }) => {
 
     fetchPhoneNumber();
   }, []);
+
+  //Device back button handling
+    useFocusEffect(
+    React.useCallback(() => {
+      const backAction = () => {
+        Alert.alert("Cancel", "Are you sure you want to cancel?", [
+          {
+            text: "No",
+            onPress: () => null,
+            style: "cancel",
+          },
+          {
+            text: "Yes",
+            onPress: () => navigation.navigate("PatientDashboardPage"),
+          },
+        ]);
+        return true;
+      };
+  
+      const backHandler = BackHandler.addEventListener(
+        "hardwareBackPress",
+        backAction
+      );
+  
+      return () => backHandler.remove();
+    }, [navigation])
+  );
 
   const fetchPatientDetails = async (phone: string) => {
     try {

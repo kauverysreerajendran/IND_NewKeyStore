@@ -12,6 +12,7 @@ import {
   Dimensions,
   Platform,
   Alert,
+  BackHandler
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -23,7 +24,7 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import texts from "../translation/texts";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-
+import { useFocusEffect } from "@react-navigation/native";
 interface PatientDetails {
   patient_id: string; // Keep the patient_id string if you need it for other purposes
   diet: string;
@@ -77,6 +78,33 @@ const VegDietPage: React.FC = () => {
     { title: nutrientTitles.crispFreshSalads, hasQuantity: true },
     { title: nutrientTitles.vitalGreens, hasQuantity: false },
   ];
+//Device back button handling
+useFocusEffect(
+  React.useCallback(() => {
+    const backAction = () => {
+      Alert.alert("Cancel", "Are you sure you want to cancel?", [
+        {
+          text: "No",
+          onPress: () => null,
+          style: "cancel",
+        },
+        {
+          text: "Yes",
+          onPress: () => navigation.navigate("PatientDashboardPage"),
+        },
+      ]);
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      backAction
+    );
+
+    return () => backHandler.remove();
+  }, [navigation])
+);
+
 
   useEffect(() => {
     const fetchPhoneNumber = async () => {

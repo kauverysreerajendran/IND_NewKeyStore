@@ -13,6 +13,8 @@ import {
   TouchableWithoutFeedback,
   Platform,
   Keyboard,
+  BackHandler,
+
 } from "react-native";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { RootStackParamList } from "../../type";
@@ -21,7 +23,7 @@ import Ionicons from "react-native-vector-icons/Ionicons";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import DateTimePicker from "@react-native-community/datetimepicker";
-
+import { useFocusEffect } from "@react-navigation/native";
 type PatientProfileScreenNavigationProp = NavigationProp<
   RootStackParamList,
   "MedicationManager"
@@ -78,6 +80,33 @@ export default function MedicationManager() {
   const [showEndPicker, setShowEndPicker] = useState(false);
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
+
+  //Device back button handling
+useFocusEffect(
+  React.useCallback(() => {
+    const backAction = () => {
+      Alert.alert("Cancel", "Are you sure you want to cancel?", [
+        {
+          text: "No",
+          onPress: () => null,
+          style: "cancel",
+        },
+        {
+          text: "Yes",
+          onPress: () => navigation.navigate("PatientDashboardPage"),
+        },
+      ]);
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      backAction
+    );
+
+    return () => backHandler.remove();
+  }, [navigation])
+);
 
   useEffect(() => {
     const fetchPhoneNumber = async () => {

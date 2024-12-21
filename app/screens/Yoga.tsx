@@ -11,6 +11,7 @@ import {
   Alert,
   SafeAreaView,
   StatusBar,
+  BackHandler
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -20,6 +21,7 @@ import Icon from "react-native-vector-icons/MaterialIcons";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { useFocusEffect } from "@react-navigation/native";
 // Define the props type
 
 type YogaNavigationProp = StackNavigationProp<
@@ -60,6 +62,33 @@ const YogaPage: React.FC<WalkingProps> = ({ navigation }) => {
   // State for Yes/No selections
   const [yogaToday, setYogaToday] = useState<string | null>(null);
   const [mindfulYoga, setMindfulYoga] = useState<string | null>(null);
+
+//Device back button handler
+useFocusEffect(
+  React.useCallback(() => {
+    const backAction = () => {
+      Alert.alert("Cancel", "Are you sure you want to cancel?", [
+        {
+          text: "No",
+          onPress: () => null,
+          style: "cancel",
+        },
+        {
+          text: "Yes",
+          onPress: () => navigation.navigate("PatientDashboardPage"),
+        },
+      ]);
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      backAction
+    );
+
+    return () => backHandler.remove();
+  }, [navigation])
+);
 
   useEffect(() => {
     const fetchPhoneNumber = async () => {

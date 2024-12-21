@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  BackHandler,
 } from "react-native";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import Icon from "react-native-vector-icons/MaterialIcons";
@@ -19,6 +20,7 @@ import { RootStackParamList } from "../../type";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { useFocusEffect } from "@react-navigation/native";
 
 // Define the props type
 
@@ -85,6 +87,35 @@ const DailyExercise: React.FC<DailyExerciseProps> = ({ navigation }) => {
     questionsTitles.chores, // Updated to use the translated question
   ];
 
+
+
+
+useFocusEffect(
+  React.useCallback(() => {
+    const backAction = () => {
+      Alert.alert("Cancel", "Are you sure you want to cancel?", [
+        {
+          text: "No",
+          onPress: () => null,
+          style: "cancel",
+        },
+        {
+          text: "Yes",
+          onPress: () => navigation.navigate("PatientDashboardPage"),
+        },
+      ]);
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      backAction
+    );
+
+    return () => backHandler.remove();
+  }, [navigation])
+);
+
   useEffect(() => {
     const fetchPhoneNumber = async () => {
       const storedPhoneNumber = await AsyncStorage.getItem("phoneNumber");
@@ -115,6 +146,33 @@ const DailyExercise: React.FC<DailyExerciseProps> = ({ navigation }) => {
       console.error("Error fetching patient details:", error);
     }
   };
+
+  //Backhandler
+  useFocusEffect(
+    React.useCallback(() => {
+      const backAction = () => {
+        Alert.alert("Cancel", "Are you sure you want to cancel?", [
+          {
+            text: "No",
+            onPress: () => null,
+            style: "cancel",
+          },
+          {
+            text: "Yes",
+            onPress: () => navigation.navigate("PatientDashboardPage"),
+          },
+        ]);
+        return true;
+      };
+  
+      const backHandler = BackHandler.addEventListener(
+        "hardwareBackPress",
+        backAction
+      );
+  
+      return () => backHandler.remove();
+    }, [navigation])
+  );
 
   const handleAnswerChange = (index: number, answer: string) => {
     const newAnswers = [...answers];

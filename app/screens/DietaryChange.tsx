@@ -9,7 +9,7 @@ import {
   StatusBar,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-
+import React from "react";
 import { Ionicons } from "@expo/vector-icons"; // Ensure you have installed expo vector icons
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import texts from "../translation/texts";

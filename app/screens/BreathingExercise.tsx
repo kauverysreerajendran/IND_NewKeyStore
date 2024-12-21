@@ -9,7 +9,11 @@ import {
   Image,
   SafeAreaView,
   StatusBar,
+  BackHandler,
+  Alert,
+
 } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { Audio } from "expo-av"; // Import Audio from expo-av
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
@@ -82,7 +86,31 @@ const BreathingExercise = () => {
     navigation.navigate("Exercise");
   };
 
-  
+       useFocusEffect(
+      React.useCallback(() => {
+        const backAction = () => {
+          Alert.alert("Cancel", "Are you sure you want to cancel?", [
+            {
+              text: "No",
+              onPress: () => null,
+              style: "cancel",
+            },
+            {
+              text: "Yes",
+              onPress: () => navigation.navigate("PatientDashboardPage"),
+            },
+          ]);
+          return true;
+        };
+    
+        const backHandler = BackHandler.addEventListener(
+          "hardwareBackPress",
+          backAction
+        );
+    
+        return () => backHandler.remove();
+      }, [navigation])
+    );
 
   useEffect(() => {
     loadSound(); // Load sound on component mount

@@ -12,6 +12,7 @@ import {
   Modal,
   SafeAreaView,
   StatusBar,
+  BackHandler
 } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import * as Progress from "react-native-progress";
@@ -23,6 +24,9 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../../type";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useFocusEffect } from "@react-navigation/native";
+
+
 // Define the props type
 
 type WalkingNavigationProp = StackNavigationProp<
@@ -104,6 +108,33 @@ const Walking: React.FC<WalkingProps> = ({ navigation }) => {
 
     setConfettiTimeout(timeoutId); // Store the timeout ID
   };
+
+//Device back button handler
+useFocusEffect(
+  React.useCallback(() => {
+    const backAction = () => {
+      Alert.alert("Cancel", "Are you sure you want to cancel?", [
+        {
+          text: "No",
+          onPress: () => null,
+          style: "cancel",
+        },
+        {
+          text: "Yes",
+          onPress: () => navigation.navigate("PatientDashboardPage"),
+        },
+      ]);
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      backAction
+    );
+
+    return () => backHandler.remove();
+  }, [navigation])
+);
 
   useEffect(() => {
     const fetchData = () => {
