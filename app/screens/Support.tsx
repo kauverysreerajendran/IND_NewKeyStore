@@ -1,7 +1,7 @@
 import React, { useRef, useEffect } from "react";
 import {
   View,
-  Text,
+  Text as RNText,
   StyleSheet,
   Image,
   ScrollView,
@@ -18,6 +18,10 @@ import texts from "../translation/texts";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../../type";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+// Custom Text component to disable font scaling globally
+const Text = (props: any) => {
+  return <RNText {...props} allowFontScaling={false} />;
+};
 
 const SupportPage = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();

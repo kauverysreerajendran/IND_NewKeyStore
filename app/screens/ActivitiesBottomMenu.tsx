@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import {
   View,
-  Text,
+  Text as RNText,
   StyleSheet,
   Dimensions,
   SafeAreaView,
@@ -12,6 +12,10 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BarChart } from "react-native-chart-kit";
+
+
+// Custom Text component to disable font scaling globally 
+const Text = (props: any) => { return <RNText {...props} allowFontScaling={false} />; };
 
 
 interface PatientDetails {

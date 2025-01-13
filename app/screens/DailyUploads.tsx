@@ -3,7 +3,7 @@ import {
   View,
   TouchableOpacity,
   Image,
-  Text,
+  Text as RNText,
   StyleSheet,
   Dimensions,
   ImageSourcePropType,
@@ -21,6 +21,10 @@ import texts from "../translation/texts";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { Ionicons } from "@expo/vector-icons";
 import { InterruptionModeAndroid } from "expo-av";
+
+// Custom Text component to disable font scaling globally 
+const Text = (props: any) => { return <RNText {...props} allowFontScaling={false} />; };
+
 
 interface PatientDetails {
   patient_id: string; // Ensure this is defined

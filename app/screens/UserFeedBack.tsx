@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import {
   View,
-  Text,
+  Text as RNText,
   StyleSheet,
   TextInput,
   TouchableOpacity,
@@ -18,6 +18,10 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { RootStackParamList } from "../../type";
+
+// Custom Text component to disable font scaling globally 
+const Text = (props: any) => { return <RNText {...props} allowFontScaling={false} />; };
+
 
 interface PatientDetails {
   patient_id: string;

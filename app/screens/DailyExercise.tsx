@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
-  Text,
+  Text as RNText,
   View,
   StyleSheet,
   ScrollView,
@@ -21,6 +21,11 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useFocusEffect } from "@react-navigation/native";
+import CustomAlert from "../components/CustomAlert";
+// Custom Text component to disable font scaling globally
+const Text = (props: any) => {
+  return <RNText {...props} allowFontScaling={false} />;
+};
 
 // Define the props type
 
@@ -44,7 +49,14 @@ const DailyExercise: React.FC<DailyExerciseProps> = ({ navigation }) => {
 
   // Toggle between Tamil and English based on the button click
   const languageText = isTranslatingToTamil ? texts.tamil : texts.english;
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState("");
+  const [alertMessage, setAlertMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successAlertVisible, setSuccessAlertVisible] = useState(false);
 
+  const [regularAlertVisible, setRegularAlertVisible] = useState(false);
+  const [cancelAlertVisible, setCancelAlertVisible] = useState(false);
   // Update language state dynamically
   const language: "english" | "tamil" = isTranslatingToTamil
     ? "tamil"
@@ -87,34 +99,33 @@ const DailyExercise: React.FC<DailyExerciseProps> = ({ navigation }) => {
     questionsTitles.chores, // Updated to use the translated question
   ];
 
+  useFocusEffect(
+    React.useCallback(() => {
+      const backAction = () => {
+        /* Alert.alert ("Cancel", "Are you sure you want to cancel?", [
+          {
+            text: "No",
+            onPress: () => null,
+            style: "cancel",
+          },
+          {
+            text: "Yes",
+            onPress: () => navigation.navigate("PatientDashboardPage"),
+          },
+        ]); */
+        setCancelAlertVisible(true);
 
+        return true;
+      };
 
+      const backHandler = BackHandler.addEventListener(
+        "hardwareBackPress",
+        backAction
+      );
 
-useFocusEffect(
-  React.useCallback(() => {
-    const backAction = () => {
-      Alert.alert("Cancel", "Are you sure you want to cancel?", [
-        {
-          text: "No",
-          onPress: () => null,
-          style: "cancel",
-        },
-        {
-          text: "Yes",
-          onPress: () => navigation.navigate("PatientDashboardPage"),
-        },
-      ]);
-      return true;
-    };
-
-    const backHandler = BackHandler.addEventListener(
-      "hardwareBackPress",
-      backAction
-    );
-
-    return () => backHandler.remove();
-  }, [navigation])
-);
+      return () => backHandler.remove();
+    }, [navigation])
+  );
 
   useEffect(() => {
     const fetchPhoneNumber = async () => {
@@ -151,7 +162,7 @@ useFocusEffect(
   useFocusEffect(
     React.useCallback(() => {
       const backAction = () => {
-        Alert.alert("Cancel", "Are you sure you want to cancel?", [
+        /* Alert.alert("Cancel", "Are you sure you want to cancel?", [
           {
             text: "No",
             onPress: () => null,
@@ -161,15 +172,16 @@ useFocusEffect(
             text: "Yes",
             onPress: () => navigation.navigate("PatientDashboardPage"),
           },
-        ]);
+        ]); */
+        setCancelAlertVisible(true);
         return true;
       };
-  
+
       const backHandler = BackHandler.addEventListener(
         "hardwareBackPress",
         backAction
       );
-  
+
       return () => backHandler.remove();
     }, [navigation])
   );
@@ -193,7 +205,8 @@ useFocusEffect(
     setSpecificReason("");
     setSelectedDate(null);
     setAnswers(["", "", ""]);
-    Alert.alert("Cleared successfully!"); // Show success alert
+    //Alert.alert("Cleared successfully!"); // Show success alert
+    setAlertMessage("Cleared successfully!");
   };
 
   const handleDateChange = (event: any, date?: Date | undefined) => {
@@ -221,7 +234,7 @@ useFocusEffect(
         );
 
         if (response.status === 201) {
-          Alert.alert("Success", "Your Exercise details have been saved!", [
+          /* Alert.alert("Success", "Your Exercise details have been saved!", [
             {
               text: "OK",
               onPress: () => {
@@ -229,9 +242,11 @@ useFocusEffect(
                 navigation.navigate("Walking"); // Adjust the name if necessary
               },
             },
-          ]);
+          ]); */
+          setSuccessAlertVisible(true);
         } else {
-          Alert.alert("Error saving the form");
+          //Alert.alert("Error saving the form");
+          setAlertMessage("Error saving the form");
         }
       } catch (error: any) {
         // Handle duplicate entry or other errors
@@ -240,13 +255,20 @@ useFocusEffect(
           const errorMessage =
             error.response.data?.message ||
             "Data for this date already exists. Please choose different date";
-          Alert.alert("Duplicate Entry", errorMessage);
+          //Alert.alert("Duplicate Entry", errorMessage);
+          setAlertTitle("Duplicate Entry");
+          setAlertMessage(errorMessage);
         } else {
-          Alert.alert("Error", "There was an issue saving the data");
+          //Alert.alert("Error", "There was an issue saving the data");
+          setAlertTitle("Error");
+          setAlertMessage("There was an issue saving the data");
         }
       }
     } else {
-      Alert.alert("Missing required fields", "Please select a date.");
+      //
+      //Alert.alert("Missing required fields", "Please select a date.");
+      setAlertTitle("Missing required fields");
+      setAlertMessage("Please select a date.");
     }
   };
 
@@ -266,7 +288,7 @@ useFocusEffect(
     handleSave();
   };
 
-  const handleCancel = () => {
+  /* const handleCancel = () => {
     Alert.alert(
       languageText.confirmCancelTitle,
       languageText.confirmCancelMessage,
@@ -279,6 +301,9 @@ useFocusEffect(
       ],
       { cancelable: false }
     );
+  }; */
+  const handleCancel = () => {
+    setCancelAlertVisible(true);
   };
 
   return (
@@ -286,6 +311,30 @@ useFocusEffect(
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
+      {/* CustomAlert for cancel confirmation */}
+      <CustomAlert
+        title={languageText.confirmCancelTitle}
+        message={languageText.confirmCancelMessage}
+        visible={cancelAlertVisible}
+        onClose={() => setCancelAlertVisible(false)}
+        onYes={() => navigation.navigate("Exercise")} // Handles "Yes" button
+        onNo={() => setCancelAlertVisible(false)} // Handles "No" button
+        mode="confirm" // Optionally specify "confirm" for Yes/No buttons
+      />
+
+      {/* CustomAlert for success confirmation */}
+      <CustomAlert
+        title="Success"
+        message="Your Exercise details have been saved!"
+        visible={successAlertVisible}
+        onClose={() => setSuccessAlertVisible(false)}
+        mode="ok"
+        onOk={() => {
+          setSuccessAlertVisible(false);
+          navigation.navigate("Walking"); // Adjust the name if necessary
+        }}
+      />
+
       <View style={styles.translateContainer}>
         <TouchableOpacity
           onPress={handleTranslate}

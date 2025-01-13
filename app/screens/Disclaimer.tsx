@@ -1,19 +1,42 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, Alert, StatusBar, Platform, SafeAreaView} from 'react-native';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { useNavigation } from '@react-navigation/native';
-import { RootStackParamList } from '../../type';
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text as RNText,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  Image,
+  Alert,
+  StatusBar,
+  Platform,
+  SafeAreaView,
+} from "react-native";
+import { StackNavigationProp } from "@react-navigation/stack";
+import { useNavigation } from "@react-navigation/native";
+import { RootStackParamList } from "../../type";
 //import { SafeAreaView } from 'react-native-safe-area-context';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import CustomAlert from "../components/CustomAlert";
+// Custom Text component to disable font scaling globally
+const Text = (props: any) => {
+  return <RNText {...props} allowFontScaling={false} />;
+};
 
-type DisclaimerPageNavigationProp = StackNavigationProp<RootStackParamList, 'DisclaimerPage'>;
+type DisclaimerPageNavigationProp = StackNavigationProp<
+  RootStackParamList,
+  "DisclaimerPage"
+>;
 
 const DisclaimerPage: React.FC = () => {
   const navigation = useNavigation<DisclaimerPageNavigationProp>();
   const [isChecked, setIsChecked] = useState(false); // State for checkbox
-  const [phoneNumber, setPhoneNumber] = useState<string>('');
-  const [role, setRole] = useState<string>('');
+  const [phoneNumber, setPhoneNumber] = useState<string>("");
+  const [role, setRole] = useState<string>("");
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState('');
+  const [alertMessage, setAlertMessage] = useState('');
+
 
   // Fetch phone number and role after login
   useEffect(() => {
@@ -21,7 +44,7 @@ const DisclaimerPage: React.FC = () => {
       const storedPhoneNumber = await AsyncStorage.getItem("phoneNumber");
       if (storedPhoneNumber) {
         setPhoneNumber(storedPhoneNumber);
-        console.log('Phone Number:', storedPhoneNumber); // Log phone number
+        console.log("Phone Number:", storedPhoneNumber); // Log phone number
 
         // After getting phone number, you would typically fetch the role (admin or patient) here
         fetchRole(storedPhoneNumber);
@@ -33,9 +56,9 @@ const DisclaimerPage: React.FC = () => {
       // Replace this with your logic to fetch the role based on the phone number
       // For now, we'll assume a dummy role fetching logic
       // Fetch role (admin or patient) based on phone number
-      const fetchedRole = phone === 'adminPhone' ? 'Admin' : 'Patient'; // Example condition
+      const fetchedRole = phone === "adminPhone" ? "Admin" : "Patient"; // Example condition
       setRole(fetchedRole);
-      console.log('User Role:', fetchedRole); // Log the role (Admin or Patient)
+      console.log("User Role:", fetchedRole); // Log the role (Admin or Patient)
     };
 
     fetchPhoneNumber();
@@ -43,39 +66,47 @@ const DisclaimerPage: React.FC = () => {
 
   const handleProceed = () => {
     if (isChecked) {
-      if (role === 'Admin') {
-        navigation.navigate('AdminDashboardPage'); // Navigate to Admin Dashboard
+      if (role === "Admin") {
+        navigation.navigate("AdminDashboardPage"); // Navigate to Admin Dashboard
       } else {
-        navigation.navigate('PatientDashboardPage'); // Navigate to Patient Dashboard
+        navigation.navigate("PatientDashboardPage"); // Navigate to Patient Dashboard
       }
     } else {
-      Alert.alert('Please acknowledge the disclaimer by checking the box.'); // Show alert if not checked
+      //Alert.alert("Please acknowledge the disclaimer by checking the box."); // Show alert if not checked
+      setAlertTitle("Disclaimer");
+      setAlertMessage("Please acknowledge the disclaimer by checking the box.");
     }
   };
 
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.safeArea}>
-        <StatusBar 
+        <StatusBar
           barStyle="dark-content"
           backgroundColor="transparent"
           translucent={true}
         />
         <View style={styles.container}>
           <Text style={styles.title}>Disclaimer</Text>
-          <ScrollView 
+          <ScrollView
             contentContainerStyle={styles.scrollContainer}
             showsVerticalScrollIndicator={false}
             showsHorizontalScrollIndicator={false}
           >
             <Text style={styles.content}>
-              Welcome to IND HEART SURAKSHA app. This app is designed to facilitate healthy life for heart disease patient.
+              Welcome to IND HEART SURAKSHA app. This app is designed to
+              facilitate healthy life for heart disease patient.
             </Text>
             <Text style={styles.content}>
-              This app stores basic information regarding your age and lifestyle. The data can be accessed by the patients and research team only. The collected data is stored confidentially and will be used only for research purposes.
+              This app stores basic information regarding your age and
+              lifestyle. The data can be accessed by the patients and research
+              team only. The collected data is stored confidentially and will be
+              used only for research purposes.
             </Text>
             <Text style={styles.content}>
-              This software serves as your personal guide to aid in heart disease prevention. If you need medical assistance in case of any emergency, always get in touch with your Doctor or consultant.
+              This software serves as your personal guide to aid in heart
+              disease prevention. If you need medical assistance in case of any
+              emergency, always get in touch with your Doctor or consultant.
             </Text>
             <View style={styles.coverImageContainer}>
               <Image
@@ -90,15 +121,16 @@ const DisclaimerPage: React.FC = () => {
               style={styles.checkbox}
               onPress={() => setIsChecked(!isChecked)}
             >
-              <View style={isChecked ? styles.checkedBox : styles.uncheckedBox} />
-              <Text style={styles.checkboxText}>I have read and understood the disclaimer</Text>
+              <View
+                style={isChecked ? styles.checkedBox : styles.uncheckedBox}
+              />
+              <Text style={styles.checkboxText}>
+                I have read and understood the disclaimer
+              </Text>
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity
-            style={styles.button}
-            onPress={handleProceed}
-          >
+          <TouchableOpacity style={styles.button} onPress={handleProceed}>
             <Text style={styles.buttonText}>Proceed</Text>
           </TouchableOpacity>
         </View>
@@ -111,44 +143,44 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#fff',
-    marginTop: Platform.OS === 'android' ? StatusBar.currentHeight || 0 : 0, // Adjust for status bar height
+    backgroundColor: "#fff",
+    marginTop: Platform.OS === "android" ? StatusBar.currentHeight || 0 : 0, // Adjust for status bar height
   },
   safeArea: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
   },
   scrollContainer: {
     paddingBottom: 0,
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 15,
-    color: '#333',
-    textAlign: 'center',
+    color: "#333",
+    textAlign: "center",
   },
   content: {
     fontSize: 16,
     lineHeight: 24,
     marginBottom: 30,
-    color: '#555',
+    color: "#555",
     paddingRight: 15,
-    textAlign: 'left',
+    textAlign: "left",
   },
   button: {
-    backgroundColor: '#DC143C',
+    backgroundColor: "#DC143C",
     padding: 15,
     borderRadius: 30,
-    alignItems: 'center',
+    alignItems: "center",
     margin: 0,
-    width: '40%',
-    alignSelf: 'center',
+    width: "40%",
+    alignSelf: "center",
   },
   buttonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 20,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   coverImageContainer: {
     marginBottom: 5,
@@ -166,37 +198,37 @@ const styles = StyleSheet.create({
     borderColor: "#fff",
     borderWidth: 1,
     bottom: 28,
-    alignSelf: 'center',
+    alignSelf: "center",
   },
   checkboxContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginVertical: 20,
     paddingLeft: 15,
   },
   checkbox: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   checkedBox: {
     width: 20,
     height: 20,
     borderWidth: 2,
-    borderColor: '#DC143C',
-    backgroundColor: '#DC143C',
+    borderColor: "#DC143C",
+    backgroundColor: "#DC143C",
     marginRight: 10,
   },
   uncheckedBox: {
     width: 20,
     height: 20,
     borderWidth: 2,
-    borderColor: '#DC143C',
-    backgroundColor: '#fff',
+    borderColor: "#DC143C",
+    backgroundColor: "#fff",
     marginRight: 10,
   },
   checkboxText: {
     fontSize: 16,
-    color: '#333',
+    color: "#333",
   },
 });
 

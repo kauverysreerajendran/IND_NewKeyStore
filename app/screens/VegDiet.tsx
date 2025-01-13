@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
-  Text,
+  Text as RNText,
   View,
   StyleSheet,
   SafeAreaView,
@@ -25,6 +25,12 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import texts from "../translation/texts";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
+
+// Custom Text component to disable font scaling globally 
+const Text = (props: any) => { return <RNText {...props} allowFontScaling={false} />; };
+
+
+
 interface PatientDetails {
   patient_id: string; // Keep the patient_id string if you need it for other purposes
   diet: string;

@@ -11,12 +11,11 @@ import AdminDashboardPage from "../screens/AdminDashboard";
 import AddPatientProfile from "../screens/AddPatientProfile";
 import AddUserProfilePage from "../screens/AddUserProfile";
 import ViewPatientProfile from "../screens/ViewPatientProfile";
-import ViewUserTablePage from "../screens/ViewUserTable";
 import AddClinicalProfilePage from "../screens/AddClinicalProfile";
-import ViewClinicalTablePage from "../screens/ViewClinicalTable";
+//import ViewClinicalTablePage from "../screens/ViewClinicalTable";
 import ViewPatientTablePage from "../screens/ViewPatientTable";
 import AddMetabolicProfilePage from "../screens/AddMetabolicProfile";
-import ViewMetabolicTablePage from "../screens/ViewMetabolicTable";
+//import ViewMetabolicTablePage from "../screens/ViewMetabolicTable";
 import PatientDashboardPage from "../screens/PatientDashboard";
 import VegDietPage from "../screens/VegDiet";
 import WaterPage from "../screens/Water";
@@ -94,11 +93,7 @@ const StackNavigation: React.FC = () => {
           component={AddUserProfilePage}
           options={{ headerShown: false }}
         />
-        <Stack.Screen
-          name="ViewUserTablePage"
-          component={ViewUserTablePage}
-          options={{ headerShown: false }}
-        />
+        
         <Stack.Screen
   name="ViewPatientProfile"
   component={ViewPatientProfile}
@@ -114,11 +109,11 @@ const StackNavigation: React.FC = () => {
           component={AddClinicalProfilePage}
           options={{ headerShown: false }}
         />
-        <Stack.Screen
+        {/* <Stack.Screen
           name="ViewClinicalTablePage"
           component={ViewClinicalTablePage}
           options={{ headerShown: false }}
-        />
+        /> */}
         <Stack.Screen
           name="ViewPatientTablePage"
           component={ViewPatientTablePage}
@@ -129,11 +124,11 @@ const StackNavigation: React.FC = () => {
           component={AddMetabolicProfilePage}
           options={{ headerShown: false }}
         />
-        <Stack.Screen
+        {/* <Stack.Screen
           name="ViewMetabolicTablePage"
           component={ViewMetabolicTablePage}
           options={{ headerShown: false }}
-        />
+        /> */}
         <Stack.Screen
           name="PatientDashboardPage"
           component={PatientDashboardPage}
@@ -275,6 +270,10 @@ const StackNavigation: React.FC = () => {
   options={{
     headerShown: true,
     title: 'Activity Details',
+    headerTitleStyle: {
+      fontSize: 16, // Fixed font size for the title
+      fontWeight: 'bold',
+    }
   }}
 />
 

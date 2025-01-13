@@ -1,6 +1,6 @@
 import {
   View,
-  Text,
+  Text as RNText,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
@@ -17,6 +17,11 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../../type";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import texts from "../translation/texts";
+
+
+// Custom Text component to disable font scaling globally 
+const Text = (props: any) => { return <RNText {...props} allowFontScaling={false} />; };
+
 
 export default function Insights() {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
@@ -223,29 +228,65 @@ const goToNextPage = () => {
             </View>
           </ScrollView>
 
-          {/* Pagination Controls */}
-          <View style={styles.paginationContainer}>
-        <View style={styles.buttonContainer}>
-          <Button
-            title="Previous"
-            onPress={goToPreviousPage}
-            disabled={currentPage === 0}
-            color={currentPage === 0 ? "#ccc" : "#444444"} // Add custom color
-          />
-        </View>
-        <Text style={styles.pageIndicator}>
-          Page {currentPage + 1} of {pages.length}
-        </Text>
-        <View style={styles.buttonContainer}>
-          <Button
-            title="Next"
-            onPress={goToNextPage}
-            disabled={currentPage === pages.length - 1}
-            color={currentPage === pages.length - 1 ? "#ccc" : "#444444"} // Add custom color
-          />
-        </View>
-      </View>
-        </View>
+           {/* Pagination Controls */}
+           <View style={styles.paginationContainer}>
+    {/* Custom Button for "Previous" */}
+    <TouchableOpacity
+      onPress={goToPreviousPage}
+      disabled={currentPage === 0}
+      style={[
+        styles.button,
+        { backgroundColor: currentPage === 0 ? "#ccc" : "#444444" },
+      ]}
+    >
+      <Text style={[styles.buttonText, { allowFontScaling: false }]}>
+        Previous
+      </Text>
+    </TouchableOpacity>
+
+    {/* Custom Button for "Next" */}
+    <TouchableOpacity
+      onPress={goToNextPage}
+      disabled={currentPage === pages.length - 1}
+      style={[
+        styles.button,
+        {
+          backgroundColor:
+            currentPage === pages.length - 1 ? "#ccc" : "#444444",
+          opacity: currentPage === pages.length - 1 ? 0.5 : 1, // Add opacity for disabled state
+        },
+      ]}
+    >
+      <Text style={[styles.buttonText, { allowFontScaling: false }]}>
+        Next
+      </Text>
+    </TouchableOpacity>
+  </View>
+
+  <Text style={styles.pageIndicator}>
+    Page {currentPage + 1} of {pages.length}
+  </Text>
+</View>
+      <View style={styles.buttonContainer}>
+       {/* Custom Button for "Next" */}
+  <TouchableOpacity
+    onPress={goToNextPage}
+    disabled={currentPage === pages.length - 1}
+    style={[
+      styles.button,
+      {
+        backgroundColor:
+          currentPage === pages.length - 1 ? "#ccc" : "transparent", // Make the button visible
+        opacity: currentPage === pages.length - 1 ? 0.5 : 1, // Add opacity for disabled state
+      },
+    ]}
+  >
+    
+  </TouchableOpacity>
+</View>
+        
+      
+        
       </SafeAreaView>
     </SafeAreaProvider>
   );
@@ -256,20 +297,44 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: "#DCDCDC",
     marginTop: 40,
+    marginBottom: -50,
   },
   paginationContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    flexDirection: "row", // Ensure the buttons are aligned horizontally in a row
+    justifyContent: "flex-start", // Align both buttons to the left side
     alignItems: "center",
     padding: 10,
   },
-  pageIndicator: { 
-    fontSize: 13, 
+  
+  pageIndicator: {
+    fontSize: 13,
     fontWeight: "bold",
-    marginLeft: 30,
-    marginRight: 30,
+    textAlign: "center",
+    marginLeft: 20,
     
-   },
+  },
+  
+  button: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+    marginRight: 150, // Add some spacing between the "Previous" and "Next" buttons
+  },
+  
+  buttonText: {
+    color: "#ffffff",
+    fontSize: 16,
+    textAlign: "center",
+  },
+  
+  
+  buttonContainer: {
+    justifyContent: "center", // Ensures the button is centered horizontally
+    alignItems: "center", // Ensures the button is centered vertically
+    marginTop: 20, // Provides spacing between the page indicator and the Next button
+  },
+  
+
 
   safeArea: {
     flex: 1,
@@ -284,11 +349,7 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
     paddingHorizontal: 10,
   },
-  buttonContainer: {
-    flex: 1,
-    marginHorizontal: 5,
-    
-  },
+  
 
   translateButton: {
     flexDirection: "row",

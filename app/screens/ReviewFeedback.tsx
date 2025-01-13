@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import {
   View,
-  Text,
+  Text as RNText,
   FlatList,
   StyleSheet,
   ListRenderItem,
@@ -15,6 +15,8 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../../type";
 import axios from "axios";
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+// Custom Text component to disable font scaling globally 
+const Text = (props: any) => { return <RNText {...props} allowFontScaling={false} />; };
 
 type ReviewFeedbackScreenNavigationProp = StackNavigationProp<
   RootStackParamList,

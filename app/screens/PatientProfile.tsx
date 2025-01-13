@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
-  Text,
+  Text as RNText,
   StyleSheet,
   SafeAreaView,
   ScrollView,
@@ -18,6 +18,10 @@ import { RootStackParamList } from "../../type";
 import texts from "../translation/texts";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+
+// Custom Text component to disable font scaling globally 
+const Text = (props: any) => { return <RNText {...props} allowFontScaling={false} />; };
+
 
 type OccupationKeys = "sedentaryworker" | "moderateworker" | "heavyworker";
 type EducationKeys = "highSchool" | "bachelor" | "master" | "phd";

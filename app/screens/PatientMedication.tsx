@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
-  Text,
+  Text as RNText,
   View,
   StyleSheet,
   ScrollView,
@@ -21,6 +21,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { AxiosError } from "axios";
 import texts from "../translation/texts";
+// Custom Text component to disable font scaling globally 
+const Text = (props: any) => { return <RNText {...props} allowFontScaling={false} />; };
+
 
 type TimeOfDay = "Morning" | "Afternoon" | "Evening" | "Night";
 

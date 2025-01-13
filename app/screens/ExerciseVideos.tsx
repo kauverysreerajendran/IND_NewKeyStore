@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Text, View, StyleSheet, TouchableOpacity, Image, FlatList, Linking } from 'react-native';
+import { Text as RNText, View, StyleSheet, TouchableOpacity, Image, FlatList, Linking } from 'react-native';
 import FontAwesomeIcon from 'react-native-vector-icons/FontAwesome';
 import MaterialIcon from 'react-native-vector-icons/MaterialIcons';
 import texts from '../translation/texts';
@@ -7,6 +7,12 @@ import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../../type";
 import Icon from "react-native-vector-icons/MaterialIcons";
+
+// Custom Text component to disable font scaling globally
+const Text = (props: any) => {
+  return <RNText {...props} allowFontScaling={false} />;
+};
+
 
 type VideoItem = {
   id: string;
@@ -45,6 +51,14 @@ const ExerciseVideos: React.FC = () => {
       duration: 'Duration: 05:36',
       uploadDate: 'Uploaded On: 28-10-2024',
       youtubeLink: 'https://youtu.be/1EoadmO5zFk',
+    },
+    {
+      id: '6',
+      title: 'Let us know about PCI',
+      thumbnail: require('../../assets/images/operation.png'),
+      duration: 'Duration: 00:52',
+      uploadDate: 'Uploaded On: 25-12-2024',
+      youtubeLink: 'https://youtu.be/pUAAB9yUUPY',
     },
     
   ];
@@ -144,6 +158,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F5F5',
     padding: 10,
     marginTop: 60,
+    marginBottom: 45,
   },
   backButton: {
     position: 'absolute',

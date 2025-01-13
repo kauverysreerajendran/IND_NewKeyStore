@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
-  Text,
+  Text as RNText,
   View,
   StyleSheet,
   SafeAreaView,
@@ -14,9 +14,9 @@ import {
   Alert,
   SafeAreaViewBase,
   StatusBar,
-  BackHandler
+  BackHandler,
 } from "react-native";
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { LinearGradient } from "expo-linear-gradient";
@@ -27,6 +27,13 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import texts from "../translation/texts";
 import { useFocusEffect } from "@react-navigation/native";
+import CustomAlert from "../components/CustomAlert";
+
+// Custom Text component to disable font scaling globally
+const Text = (props: any) => {
+  return <RNText {...props} allowFontScaling={false} />;
+};
+
 interface PatientDetails {
   patient_id: string; // Keep the patient_id string if you need it for other purposes
   diet: string;
@@ -102,12 +109,19 @@ const NonVegDietPage: React.FC = () => {
   const [patientDetails, setPatientDetails] = useState<PatientDetails | null>(
     null
   );
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState("");
+  const [alertMessage, setAlertMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [cancelAlertVisible, setCancelAlertVisible] = useState(false);
+  const [regularAlertVisible, setRegularAlertVisible] = useState(false);
+  const [alertMode, setAlertMode] = useState("info"); // Info, success, or error
 
-//Device back button handling
-useFocusEffect(
-  React.useCallback(() => {
-    const backAction = () => {
-      Alert.alert("Cancel", "Are you sure you want to cancel?", [
+  //Device back button handling
+  useFocusEffect(
+    React.useCallback(() => {
+      const backAction = () => {
+        /* Alert.alert("Cancel", "Are you sure you want to cancel?", [
         {
           text: "No",
           onPress: () => null,
@@ -117,18 +131,19 @@ useFocusEffect(
           text: "Yes",
           onPress: () => navigation.navigate("PatientDashboardPage"),
         },
-      ]);
-      return true;
-    };
+      ]); */
+        setCancelAlertVisible(true);
+        return true;
+      };
 
-    const backHandler = BackHandler.addEventListener(
-      "hardwareBackPress",
-      backAction
-    );
+      const backHandler = BackHandler.addEventListener(
+        "hardwareBackPress",
+        backAction
+      );
 
-    return () => backHandler.remove();
-  }, [navigation])
-);
+      return () => backHandler.remove();
+    }, [navigation])
+  );
 
   useEffect(() => {
     const fetchPhoneNumber = async () => {
@@ -229,9 +244,9 @@ useFocusEffect(
 
   // Handle Translation
   const handleTranslate = useCallback(() => {
-    setIsTranslatingToTamil(prev => !prev);
+    setIsTranslatingToTamil((prev) => !prev);
     console.log("Translate button pressed");
-}, []);
+  }, []);
 
   const handleClear = () => {
     setResponses(cardData.map(() => ({ yes: false, quantity: "" })));
@@ -251,7 +266,7 @@ useFocusEffect(
       others: "",
     });
   };
-  const handleCancel = () => {
+  /* const handleCancel = () => {
     Alert.alert("Cancel", "Are you sure you want to cancel?", [
       { text: "No", style: "cancel" },
       {
@@ -266,9 +281,13 @@ useFocusEffect(
         },
       },
     ]);
+  }; */
+  const handleCancel = () => {
+    // Trigger the custom alert instead of the default Alert
+    setCancelAlertVisible(true);
   };
 
-  const handleSubmit = async () => {
+  /*  const handleSubmit = async () => {
     console.log("Responses before submitting:", responses); // Log responses state for debugging
 
     if (patientDetails) {
@@ -318,6 +337,7 @@ useFocusEffect(
             },
           ]
         );
+      
       } catch (error) {
         if (axios.isAxiosError(error)) {
           const errorMessages = error.response?.data || {};
@@ -329,330 +349,455 @@ useFocusEffect(
               "The fields patient_id, date must make a unique set."
             )
           ) {
-            Alert.alert(
-              "Error",
-              "The dietary entry for this date has already been saved.",
-              [{ text: "OK" }]
-            );
+            setAlertTitle("Error");
+            setAlertMessage("The dietary entry for this date has already been saved.");
+            setAlertMode("error");
           } else if (errorMessages.date) {
-            Alert.alert(
-              "Error",
-              "The date for the dietary entry is required.",
-              [{ text: "OK" }]
-            );
+            setAlertTitle("Error");
+            setAlertMessage("The date for the dietary entry is required.");
+            setAlertMode("error");
           } else if (!requestData.patient_id || !requestData.date) {
-            Alert.alert("Error", "Please provide all required values.", [
-              { text: "OK" },
-            ]);
+            setAlertTitle("Error");
+            setAlertMessage("Please provide all required values.");
+            setAlertMode("error");
           } else {
-            Alert.alert(
-              "Error",
-              "There was an issue saving your non-vegetarian diet. Please try again.",
-              [{ text: "OK" }]
-            );
+            setAlertTitle("Error");
+            setAlertMessage("There was an issue saving your non-vegetarian diet. Please try again.");
+            setAlertMode("error");
           }
         } else {
-          Alert.alert(
-            "Error",
-            "An unexpected error occurred. Please try again.",
-            [{ text: "OK" }]
-          );
+          setAlertTitle("Error");
+          setAlertMessage("An unexpected error occurred. Please try again.");
+          setAlertMode("error");
         }
+        setAlertVisible(true); // Show error alert
+      }
+    } else {
+      console.error("No patient details available.");
+    }
+  }; */
+
+  const handleSubmit = async () => {
+    console.log("Responses before submitting:", responses); // Log responses state for debugging
+
+    if (patientDetails) {
+      // Format the date to 'YYYY-MM-DD'
+      const formattedDate = selectedDate
+        ? selectedDate.toISOString().split("T")[0]
+        : null;
+
+      // Prepare the payload
+      const requestData = {
+        patient_id: patientDetails.patient_id, // Keep it as a string
+        date: formattedDate,
+        eggs_quantity: responses[0].quantity || 0,
+        fish_quantity: responses[1].quantity || 0,
+        salt_quantity: responses[2].quantity || 0,
+        milk_quantity: responses[3].quantity || 0,
+        condensed_milk_quantity: legumes.milk || 0,
+        curd_quantity: legumes.curd || 0,
+        butter_quantity: legumes.butter || 0,
+        cheese_quantity: legumes.cheese || 0,
+        paneer_quantity: legumes.paneer || 0,
+        cream_quantity: legumes.cream || 0,
+        ghee_quantity: legumes.ghee || 0,
+        others_name: legumes.others || 0,
+        others_quantity: legumes.qty || 0,
+      };
+
+      console.log("Request Data:", requestData); // Log the payload
+
+      try {
+        const response = await axios.post(
+          "https://indheart.pinesphere.in/patient/nonvegetarian-diets/",
+          requestData
+        );
+        console.log("NonVegetarian diet saved successfully:", response.data);
+
+        // Show success alert and navigate to WaterPage
+        setAlertTitle("Success");
+        setAlertMessage(
+          "Your non-vegetarian diet has been saved successfully!"
+        );
+        setAlertMode("success");
+        setAlertVisible(true); // Show success alert after saving
+      } catch (error) {
+        if (axios.isAxiosError(error)) {
+          const errorMessages = error.response?.data || {};
+
+          // Handle specific error messages
+          if (
+            errorMessages.non_field_errors &&
+            errorMessages.non_field_errors.includes(
+              "The fields patient_id, date must make a unique set."
+            )
+          ) {
+            setAlertTitle("Error");
+            setAlertMessage(
+              "The dietary entry for this date has already been saved."
+            );
+            setAlertMode("error");
+          } else if (errorMessages.date) {
+            setAlertTitle("Error");
+            setAlertMessage("The date for the dietary entry is required.");
+            setAlertMode("error");
+          } else if (!requestData.patient_id || !requestData.date) {
+            setAlertTitle("Error");
+            setAlertMessage("Please provide all required values.");
+            setAlertMode("error");
+          } else {
+            setAlertTitle("Error");
+            setAlertMessage(
+              "There was an issue saving your non-vegetarian diet. Please try again."
+            );
+            setAlertMode("error");
+          }
+        } else {
+          setAlertTitle("Error");
+          setAlertMessage("An unexpected error occurred. Please try again.");
+          setAlertMode("error");
+        }
+        setAlertVisible(true); // Show error alert if there was an issue
       }
     } else {
       console.error("No patient details available.");
     }
   };
-
   return (
     <SafeAreaProvider>
-    <SafeAreaView style={styles.container}>
-      <Text style={styles.greeting}>
-        Hi, {patientDetails ? patientDetails.name : "Loading..."} !
-      </Text>
-      <View style={styles.translateContainer}>
-        <TouchableOpacity
-          onPress={handleTranslate}
-          style={styles.translateButton}
-        >
-          <Icon
-            name={isTranslatingToTamil ? "language" : "translate"}
-            size={20}
-            color="#4169E1"
-            style={styles.icon}
-          />
-          <Text style={styles.buttonTranslateText}>
-            {isTranslatingToTamil ? "Translate to English" : "தமிழில் படிக்க"}
-          </Text>
-        </TouchableOpacity>
-      </View>
-      <ScrollView
-        contentContainerStyle={styles.scrollContainer}
-        showsVerticalScrollIndicator={false}
-        showsHorizontalScrollIndicator={false}
-      >
-        {/* Navigation Button */}
+      <CustomAlert
+        title="Cancel"
+        message="Are you sure you want to cancel?"
+        visible={cancelAlertVisible}
+        onClose={() => setCancelAlertVisible(false)}
+        mode="confirm"
+        onYes={() => {
+          // Ensure that navigation happens when "Yes" is clicked
+          navigation.navigate("PatientDashboardPage"); // Navigate to PatientDashboardPage
+        }}
+        onNo={() => setCancelAlertVisible(false)} // Close the alert on No
+      />
+      <CustomAlert
+        title={alertTitle}
+        message={alertMessage}
+        visible={alertVisible}
+        onClose={() => {
+          setAlertVisible(false); // Close the alert
+          if (alertMode === "success") {
+            // Navigate to WaterPage after the success alert closes
+            navigation.navigate("WaterPage");
+          }
+        }}
+        onYes={() => {
+          setAlertVisible(false); // Close the alert
+          if (alertMode === "success") {
+            // Navigate to WaterPage after the success alert closes
+            navigation.navigate("WaterPage");
+          }
+        }}
+      />
 
-        <View style={styles.topContainer}>
-          <Image
-            source={require("../../assets/images/nv.jpg")}
-            style={styles.topImage}
-          />
-          <View style={styles.textOverlay}>
-            <Text style={styles.topText}>{languageText.evaluate}</Text>
-            <Text style={styles.topSubText}>
-              {languageText.nonVegetarianDiet}
-            </Text>
-          </View>
-        </View>
-
-        {/* Date Picker Field with Image */}
-        <View style={styles.datePickerContainer}>
-          <Image
-            source={require("../../assets/images/calendar.png")}
-            style={styles.datePickerImage}
-          />
+      <SafeAreaView style={styles.container}>
+        <Text style={styles.greeting}>
+          Hi, {patientDetails ? patientDetails.name : "Loading..."} !
+        </Text>
+        <View style={styles.translateContainer}>
           <TouchableOpacity
-            onPress={() => setShowDatePicker(true)}
-            style={styles.datePickerField}
+            onPress={handleTranslate}
+            style={styles.translateButton}
           >
-            <Text style={styles.datePickerText}>
-              {selectedDate ? selectedDate.toDateString() : "Select Date"}
+            <Icon
+              name={isTranslatingToTamil ? "language" : "translate"}
+              size={20}
+              color="#4169E1"
+              style={styles.icon}
+            />
+            <Text style={styles.buttonTranslateText}>
+              {isTranslatingToTamil ? "Translate to English" : "தமிழில் படிக்க"}
             </Text>
           </TouchableOpacity>
         </View>
+        <ScrollView
+          contentContainerStyle={styles.scrollContainer}
+          showsVerticalScrollIndicator={false}
+          showsHorizontalScrollIndicator={false}
+        >
+          {/* Navigation Button */}
 
-        {/* DateTimePicker */}
-        {showDatePicker && (
-          <View style={styles.datePickerContainer}>
-            <DateTimePicker
-              testID="dateTimePicker"
-              value={selectedDate || new Date()}
-              mode="date"
-              display={Platform.OS === "ios" ? "inline" : "calendar"}
-              onChange={handleDateChange}
+          <View style={styles.topContainer}>
+            <Image
+              source={require("../../assets/images/nv.jpg")}
+              style={styles.topImage}
             />
+            <View style={styles.textOverlay}>
+              <Text style={styles.topText}>{languageText.evaluate}</Text>
+              <Text style={styles.topSubText}>
+                {languageText.nonVegetarianDiet}
+              </Text>
+            </View>
           </View>
-        )}
 
-        {/* Nutrient Intake Journal */}
-        <Text style={styles.cardsTitle}>
-          {languageText.proteinIntakeJournal}
-        </Text>
-        <View style={styles.cardsContainer}>
-          {cardData.map((card, index) => (
-            <View key={index} style={styles.cardRow}>
-              <View style={styles.card}>
-                <Text style={styles.cardTitle}>{card.title}</Text>
-                <Image source={images[index]} style={styles.cardImage} />
-                <View style={styles.buttonContainer}>
-                  <TouchableOpacity
-                    style={[
-                      styles.button,
-                      responses[index].yes
-                        ? styles.yesButtonActive
-                        : styles.yesButtonInactive,
-                    ]}
-                    onPress={() => handleYes(index)}
-                  >
-                    <Text style={styles.buttonText}>{languageText.yes}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.button,
-                      !responses[index].yes
-                        ? styles.noButtonActive
-                        : styles.noButtonInactive,
-                    ]}
-                    onPress={() => handleNo(index)}
-                  >
-                    <Text style={styles.buttonText}>{languageText.no}</Text>
-                  </TouchableOpacity>
-                </View>
-                {card.hasQuantity && responses[index].yes && (
-                  <View style={styles.quantityContainer}>
-                    <TextInput
-                      style={[styles.quantityInput, { paddingLeft: 25 }]}
-                      /* placeholder={card.title === "Salt" ? "Quantity in gm" : card.title === "Milk" ? "Quantity in ml" : "Quantity in cups"} */
-                      placeholder={texts[language].quantityPlaceholder}
-                      keyboardType="numeric"
-                      value={responses[index].quantity}
-                      onChangeText={(text) => handleQuantityChange(index, text)}
-                    />
-                    <Icon
-                      name="straighten"
-                      size={16}
-                      color="#3CB371"
-                      style={styles.quantityIcon}
-                    />
+          {/* Date Picker Field with Image */}
+          <View style={styles.datePickerContainer}>
+            <Image
+              source={require("../../assets/images/calendar.png")}
+              style={styles.datePickerImage}
+            />
+            <TouchableOpacity
+              onPress={() => setShowDatePicker(true)}
+              style={styles.datePickerField}
+            >
+              <Text style={styles.datePickerText}>
+                {selectedDate ? selectedDate.toDateString() : "Select Date"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* DateTimePicker */}
+          {showDatePicker && (
+            <View style={styles.datePickerContainer}>
+              <DateTimePicker
+                testID="dateTimePicker"
+                value={selectedDate || new Date()}
+                mode="date"
+                display={Platform.OS === "ios" ? "inline" : "calendar"}
+                onChange={handleDateChange}
+              />
+            </View>
+          )}
+
+          {/* Nutrient Intake Journal */}
+          <Text style={styles.cardsTitle}>
+            {languageText.proteinIntakeJournal}
+          </Text>
+          <View style={styles.cardsContainer}>
+            {cardData.map((card, index) => (
+              <View key={index} style={styles.cardRow}>
+                <View style={styles.card}>
+                  <Text style={styles.cardTitle}>{card.title}</Text>
+                  <Image source={images[index]} style={styles.cardImage} />
+                  <View style={styles.buttonContainer}>
+                    <TouchableOpacity
+                      style={[
+                        styles.button,
+                        responses[index].yes
+                          ? styles.yesButtonActive
+                          : styles.yesButtonInactive,
+                      ]}
+                      onPress={() => handleYes(index)}
+                    >
+                      <Text style={styles.buttonText}>{languageText.yes}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.button,
+                        !responses[index].yes
+                          ? styles.noButtonActive
+                          : styles.noButtonInactive,
+                      ]}
+                      onPress={() => handleNo(index)}
+                    >
+                      <Text style={styles.buttonText}>{languageText.no}</Text>
+                    </TouchableOpacity>
                   </View>
-                )}
+                  {card.hasQuantity && responses[index].yes && (
+                    <View style={styles.quantityContainer}>
+                      <TextInput
+                        style={[styles.quantityInput, { paddingLeft: 25 }]}
+                        /* placeholder={card.title === "Salt" ? "Quantity in gm" : card.title === "Milk" ? "Quantity in ml" : "Quantity in cups"} */
+                        placeholder={texts[language].quantityPlaceholder}
+                        keyboardType="numeric"
+                        value={responses[index].quantity}
+                        onChangeText={(text) =>
+                          handleQuantityChange(index, text)
+                        }
+                      />
+                      <Icon
+                        name="straighten"
+                        size={16}
+                        color="#3CB371"
+                        style={styles.quantityIcon}
+                      />
+                    </View>
+                  )}
+                </View>
               </View>
-            </View>
-          ))}
+            ))}
 
-          {/* Milk in ML section */}
+            {/* Milk in ML section */}
 
-          {/* Legumes Section */}
-          <View style={styles.section}>
-            <Text style={styles.title}>{languageText.milkProducts}</Text>
+            {/* Legumes Section */}
+            <View style={styles.section}>
+              <Text style={styles.title}>{languageText.milkProducts}</Text>
 
-            <View style={styles.legumeContainer}>
-              <LinearGradient
-                colors={["#f5f7fa", "#c3cfe2"]} // Start and end colors for the gradient
-                style={styles.legumeBox}
-              >
-                <Text style={styles.legumeLabel}>
-                  {languageText.condensedMilk}
-                </Text>
-              </LinearGradient>
+              <View style={styles.legumeContainer}>
+                <LinearGradient
+                  colors={["#f5f7fa", "#c3cfe2"]} // Start and end colors for the gradient
+                  style={styles.legumeBox}
+                >
+                  <Text style={styles.legumeLabel}>
+                    {languageText.condensedMilk}
+                  </Text>
+                </LinearGradient>
 
-              <TextInput
-                style={styles.legumeInput}
-                placeholder={texts[language].quantityPlaceholder}
-                keyboardType="numeric"
-                value={legumes.milk}
-                onChangeText={(text) => handleLegumeCountChange("milk", text)}
-              />
-            </View>
+                <TextInput
+                  style={styles.legumeInput}
+                  placeholder={texts[language].quantityPlaceholder}
+                  keyboardType="numeric"
+                  value={legumes.milk}
+                  onChangeText={(text) => handleLegumeCountChange("milk", text)}
+                />
+              </View>
 
-            <View style={styles.legumeContainer}>
-              <LinearGradient
-                colors={["#f5f7fa", "#c3cfe2"]}
-                style={styles.legumeBox}
-              >
-                <Text style={styles.legumeLabel}>{languageText.curd}</Text>
-              </LinearGradient>
-              <TextInput
-                style={styles.legumeInput}
-                placeholder={texts[language].quantityPlaceholder}
-                keyboardType="numeric"
-                value={legumes.curd}
-                onChangeText={(text) => handleLegumeCountChange("curd", text)}
-              />
-            </View>
+              <View style={styles.legumeContainer}>
+                <LinearGradient
+                  colors={["#f5f7fa", "#c3cfe2"]}
+                  style={styles.legumeBox}
+                >
+                  <Text style={styles.legumeLabel}>{languageText.curd}</Text>
+                </LinearGradient>
+                <TextInput
+                  style={styles.legumeInput}
+                  placeholder={texts[language].quantityPlaceholder}
+                  keyboardType="numeric"
+                  value={legumes.curd}
+                  onChangeText={(text) => handleLegumeCountChange("curd", text)}
+                />
+              </View>
 
-            <View style={styles.legumeContainer}>
-              <LinearGradient
-                colors={["#f5f7fa", "#c3cfe2"]}
-                style={styles.legumeBox}
-              >
-                <Text style={styles.legumeLabel}>{languageText.butter}</Text>
-              </LinearGradient>
-              <TextInput
-                style={styles.legumeInput}
-                placeholder={texts[language].quantityPlaceholder}
-                keyboardType="numeric"
-                value={legumes.butter}
-                onChangeText={(text) => handleLegumeCountChange("butter", text)}
-              />
-            </View>
+              <View style={styles.legumeContainer}>
+                <LinearGradient
+                  colors={["#f5f7fa", "#c3cfe2"]}
+                  style={styles.legumeBox}
+                >
+                  <Text style={styles.legumeLabel}>{languageText.butter}</Text>
+                </LinearGradient>
+                <TextInput
+                  style={styles.legumeInput}
+                  placeholder={texts[language].quantityPlaceholder}
+                  keyboardType="numeric"
+                  value={legumes.butter}
+                  onChangeText={(text) =>
+                    handleLegumeCountChange("butter", text)
+                  }
+                />
+              </View>
 
-            <View style={styles.legumeContainer}>
-              <LinearGradient
-                colors={["#f5f7fa", "#c3cfe2"]}
-                style={styles.legumeBox}
-              >
-                <Text style={styles.legumeLabel}>{languageText.cheese}</Text>
-              </LinearGradient>
-              <TextInput
-                style={styles.legumeInput}
-                placeholder={texts[language].quantityPlaceholder}
-                keyboardType="numeric"
-                value={legumes.cheese}
-                onChangeText={(text) => handleLegumeCountChange("cheese", text)}
-              />
-            </View>
+              <View style={styles.legumeContainer}>
+                <LinearGradient
+                  colors={["#f5f7fa", "#c3cfe2"]}
+                  style={styles.legumeBox}
+                >
+                  <Text style={styles.legumeLabel}>{languageText.cheese}</Text>
+                </LinearGradient>
+                <TextInput
+                  style={styles.legumeInput}
+                  placeholder={texts[language].quantityPlaceholder}
+                  keyboardType="numeric"
+                  value={legumes.cheese}
+                  onChangeText={(text) =>
+                    handleLegumeCountChange("cheese", text)
+                  }
+                />
+              </View>
 
-            <View style={styles.legumeContainer}>
-              <LinearGradient
-                colors={["#f5f7fa", "#c3cfe2"]}
-                style={styles.legumeBox}
-              >
-                <Text style={styles.legumeLabel}>{languageText.paneer}</Text>
-              </LinearGradient>
-              <TextInput
-                style={styles.legumeInput}
-                placeholder={texts[language].quantityPlaceholder}
-                keyboardType="numeric"
-                value={legumes.paneer}
-                onChangeText={(text) => handleLegumeCountChange("paneer", text)}
-              />
-            </View>
+              <View style={styles.legumeContainer}>
+                <LinearGradient
+                  colors={["#f5f7fa", "#c3cfe2"]}
+                  style={styles.legumeBox}
+                >
+                  <Text style={styles.legumeLabel}>{languageText.paneer}</Text>
+                </LinearGradient>
+                <TextInput
+                  style={styles.legumeInput}
+                  placeholder={texts[language].quantityPlaceholder}
+                  keyboardType="numeric"
+                  value={legumes.paneer}
+                  onChangeText={(text) =>
+                    handleLegumeCountChange("paneer", text)
+                  }
+                />
+              </View>
 
-            <View style={styles.legumeContainer}>
-              <LinearGradient
-                colors={["#f5f7fa", "#c3cfe2"]}
-                style={styles.legumeBox}
-              >
-                <Text style={styles.legumeLabel}>{languageText.cream}</Text>
-              </LinearGradient>
-              <TextInput
-                style={styles.legumeInput}
-                placeholder={texts[language].quantityPlaceholder}
-                keyboardType="numeric"
-                value={legumes.cream}
-                onChangeText={(text) => handleLegumeCountChange("cream", text)}
-              />
-            </View>
+              <View style={styles.legumeContainer}>
+                <LinearGradient
+                  colors={["#f5f7fa", "#c3cfe2"]}
+                  style={styles.legumeBox}
+                >
+                  <Text style={styles.legumeLabel}>{languageText.cream}</Text>
+                </LinearGradient>
+                <TextInput
+                  style={styles.legumeInput}
+                  placeholder={texts[language].quantityPlaceholder}
+                  keyboardType="numeric"
+                  value={legumes.cream}
+                  onChangeText={(text) =>
+                    handleLegumeCountChange("cream", text)
+                  }
+                />
+              </View>
 
-            <View style={styles.legumeContainer}>
-              <LinearGradient
-                colors={["#f5f7fa", "#c3cfe2"]}
-                style={styles.legumeBox}
-              >
-                <Text style={styles.legumeLabel}>{languageText.ghee}</Text>
-              </LinearGradient>
-              <TextInput
-                style={styles.legumeInput}
-                placeholder={texts[language].quantityPlaceholder}
-                keyboardType="numeric"
-                value={legumes.ghee}
-                onChangeText={(text) => handleLegumeCountChange("ghee", text)}
-              />
-            </View>
+              <View style={styles.legumeContainer}>
+                <LinearGradient
+                  colors={["#f5f7fa", "#c3cfe2"]}
+                  style={styles.legumeBox}
+                >
+                  <Text style={styles.legumeLabel}>{languageText.ghee}</Text>
+                </LinearGradient>
+                <TextInput
+                  style={styles.legumeInput}
+                  placeholder={texts[language].quantityPlaceholder}
+                  keyboardType="numeric"
+                  value={legumes.ghee}
+                  onChangeText={(text) => handleLegumeCountChange("ghee", text)}
+                />
+              </View>
 
-            <View>
-              {/* <LinearGradient
+              <View>
+                {/* <LinearGradient
     colors={["#f5f7fa", "#c3cfe2"]}
     style={styles.legumeBox}
   > */}
-              <Text style={styles.legumeOtherLabel}>{languageText.others}</Text>
-              {/* </LinearGradient> */}
-              <View style={styles.legumeInputContainer}>
-                <TextInput
-                  style={styles.legumeInputOther}
-                  placeholder={texts[language].otherEatablesPlaceholder}
-                  value={legumes.others}
-                  onChangeText={(text) => {
-                    handleLegumeCountChange("others", text);
-                  }}
-                />
-                <TextInput
-                  style={styles.legumeInputQty}
-                  placeholder={texts[language].quantityPlaceholder}
-                  keyboardType="numeric"
-                  value={legumes.qty}
-                  onChangeText={(text) => handleLegumeCountChange("qty", text)}
-                />
+                <Text style={styles.legumeOtherLabel}>
+                  {languageText.others}
+                </Text>
+                {/* </LinearGradient> */}
+                <View style={styles.legumeInputContainer}>
+                  <TextInput
+                    style={styles.legumeInputOther}
+                    placeholder={texts[language].otherEatablesPlaceholder}
+                    value={legumes.others}
+                    onChangeText={(text) => {
+                      handleLegumeCountChange("others", text);
+                    }}
+                  />
+                  <TextInput
+                    style={styles.legumeInputQty}
+                    placeholder={texts[language].quantityPlaceholder}
+                    keyboardType="numeric"
+                    value={legumes.qty}
+                    onChangeText={(text) =>
+                      handleLegumeCountChange("qty", text)
+                    }
+                  />
+                </View>
               </View>
             </View>
           </View>
+        </ScrollView>
+        {/* Footer Buttons */}
+        <View style={styles.footer}>
+          <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
+            <Text style={styles.footerButtonText}>{languageText.submit}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.clearButton} onPress={handleClear}>
+            <Text style={styles.footerButtonText}>{languageText.clear}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
+            <Text style={styles.footerButtonText}>{languageText.cancel}</Text>
+          </TouchableOpacity>
         </View>
-      </ScrollView>
-      {/* Footer Buttons */}
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-          <Text style={styles.footerButtonText}>{languageText.submit}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.clearButton} onPress={handleClear}>
-          <Text style={styles.footerButtonText}>{languageText.clear}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
-          <Text style={styles.footerButtonText}>{languageText.cancel}</Text>
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
     </SafeAreaProvider>
   );
 };

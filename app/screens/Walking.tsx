@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
-  Text,
+  Text as RNText,
   StyleSheet,
   Image,
   ScrollView,
@@ -12,7 +12,7 @@ import {
   Modal,
   SafeAreaView,
   StatusBar,
-  BackHandler
+  BackHandler,
 } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import * as Progress from "react-native-progress";
@@ -25,6 +25,10 @@ import { RootStackParamList } from "../../type";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
+import { RFValue } from "react-native-responsive-fontsize";
+
+// Custom Text component to disable font scaling globally 
+const Text = (props: any) => { return <RNText {...props} allowFontScaling={false} />; };
 
 
 // Define the props type
@@ -44,8 +48,6 @@ interface PatientDetails {
 }
 
 const Walking: React.FC<WalkingProps> = ({ navigation }) => {
-  
-
   // Toggle between Tamil and English based on the button click
   const [isTranslatingToTamil, setIsTranslatingToTamil] = useState(false);
 
@@ -84,7 +86,6 @@ const Walking: React.FC<WalkingProps> = ({ navigation }) => {
   );
   // New state for modal popup
   const [showCongrats, setShowCongrats] = useState(false);
-  
 
   // Function to trigger the styled congratulation message
   const showCongratulationAlert = () => {
@@ -109,32 +110,32 @@ const Walking: React.FC<WalkingProps> = ({ navigation }) => {
     setConfettiTimeout(timeoutId); // Store the timeout ID
   };
 
-//Device back button handler
-useFocusEffect(
-  React.useCallback(() => {
-    const backAction = () => {
-      Alert.alert("Cancel", "Are you sure you want to cancel?", [
-        {
-          text: "No",
-          onPress: () => null,
-          style: "cancel",
-        },
-        {
-          text: "Yes",
-          onPress: () => navigation.navigate("PatientDashboardPage"),
-        },
-      ]);
-      return true;
-    };
+  //Device back button handler
+  useFocusEffect(
+    React.useCallback(() => {
+      const backAction = () => {
+        Alert.alert("Cancel", "Are you sure you want to cancel?", [
+          {
+            text: "No",
+            onPress: () => null,
+            style: "cancel",
+          },
+          {
+            text: "Yes",
+            onPress: () => navigation.navigate("PatientDashboardPage"),
+          },
+        ]);
+        return true;
+      };
 
-    const backHandler = BackHandler.addEventListener(
-      "hardwareBackPress",
-      backAction
-    );
+      const backHandler = BackHandler.addEventListener(
+        "hardwareBackPress",
+        backAction
+      );
 
-    return () => backHandler.remove();
-  }, [navigation])
-);
+      return () => backHandler.remove();
+    }, [navigation])
+  );
 
   useEffect(() => {
     const fetchData = () => {
@@ -216,11 +217,11 @@ useFocusEffect(
       setIsConfettiShowing(true);
       triggerConfetti();
       showCongratulationAlert();
-  
+
       const timer = setTimeout(() => {
         setIsConfettiShowing(false);
       }, 3000);
-  
+
       return () => clearTimeout(timer);
     }
   }, [distance]);
@@ -257,46 +258,45 @@ useFocusEffect(
   const weeksSinceOperation = calculateWeeksSinceOperation(dateOfOperation);
   const goalDistance = getGoalDistance(weeksSinceOperation); // Declare goalDistance here
 
-   useEffect(() => {
+  useEffect(() => {
     // Convert current distance input to a number for progress calculation
     const currentDistance = parseFloat(distance) || 0; // Safely parse distance input
     setProgressValue(goalDistance > 0 ? currentDistance / goalDistance : 0); // Prevent division by zero
-  }, [distance, goalDistance]); 
+  }, [distance, goalDistance]);
 
-   useEffect(() => {
+  useEffect(() => {
     const currentDistance = parseFloat(distance) || 0; // Safely parse distance input
     const progress = goalDistance > 0 ? currentDistance / goalDistance : 0;
-    setProgressValue(Math.min(1, Math.max(0, progress)));  // Check if current distance meets or exceeds goal distance
+    setProgressValue(Math.min(1, Math.max(0, progress))); // Check if current distance meets or exceeds goal distance
     if (currentDistance >= goalDistance && goalDistance > 0) {
       triggerConfetti();
       showCongratulationAlert();
     }
-  },  [distance, goalDistance]); 
+  }, [distance, goalDistance]);
 
   useEffect(() => {
     const currentDistance = parseFloat(distance) || 0;
     if (currentDistance >= goalDistance && goalDistance > 0) {
       triggerConfetti(); // Trigger confetti when distance meets or exceeds goal distance
       setShowCongrats(true);
-      showCongratulationAlert()
-  
+      showCongratulationAlert();
+
       // Hide the popup after 3 seconds
       const timer = setTimeout(() => {
         setShowCongrats(false); // Hide the popup
       }, 3000); // 3000 milliseconds = 3 seconds
-  
+
       // Cleanup function to clear the timer if the component unmounts or distance changes
       return () => clearTimeout(timer);
     }
   }, [distance, goalDistance]);
-  
 
   useEffect(() => {
     const currentDistance = parseFloat(distance) || 0;
     if (parseInt(distance) >= 6) {
       triggerConfetti(); // Trigger confetti when distance is 6 or greater
       setShowCongrats(true);
-      showCongratulationAlert()
+      showCongratulationAlert();
 
       // Hide the popup after 3 seconds
       const timer = setTimeout(() => {
@@ -336,7 +336,7 @@ useFocusEffect(
 
       if (response.status === 201) {
         //showCongratulationAlert(); // Show custom styled modal alert
-        
+
         Alert.alert(
           languageText.successTitle,
           languageText.walkingDetailsSubmitted,
@@ -461,7 +461,7 @@ useFocusEffect(
             showsVerticalScrollIndicator={false}
           >
             <View style={styles.progressContainer}>
-               <Progress.Circle
+              <Progress.Circle
                 progress={progressValue}
                 size={270}
                 thickness={6}
@@ -508,24 +508,23 @@ useFocusEffect(
             </View>
 
             <View style={styles.container}>
-          {showConfetti && (
-            <Image
-              source={require("../../assets/gif/confetti.gif")}
-              style={{
-                width: "100%",
-                height: "100%",
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                zIndex: 9999,
-                
-              }}
-              resizeMode="cover"
-            />
-          )}
-</View>
+              {showConfetti && (
+                <Image
+                  source={require("../../assets/gif/confetti.gif")}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    zIndex: 9999,
+                  }}
+                  resizeMode="cover"
+                />
+              )}
+            </View>
             {/* Date Picker Component */}
             {showDatePicker && (
               <DateTimePicker
@@ -554,7 +553,7 @@ useFocusEffect(
                 {/* Update this to reflect kilometers */}
               </Text>
               <TextInput
-                style={[styles.input]}
+                style={[styles.input, { fontSize: RFValue(10) }]}
                 placeholder={`Enter distance (e.g., 0.5 or 1 km)`}
                 onChangeText={(text) => {
                   setDistance(text); // Update the state for distance
@@ -577,7 +576,7 @@ useFocusEffect(
               </Text>
               <View style={styles.inputContainer}>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { fontSize: RFValue(10) }]}
                   onChangeText={setHours}
                   value={hours}
                   placeholder={languageText.placeholderHH}
@@ -585,7 +584,7 @@ useFocusEffect(
                 />
 
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { fontSize: RFValue(10) }]}
                   onChangeText={setMinutes}
                   value={minutes}
                   placeholder={languageText.placeholderMM}
@@ -596,7 +595,7 @@ useFocusEffect(
                 {languageText.difficultyText}
               </Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { fontSize: RFValue(10) }]}
                 onChangeText={setText}
                 value={difficultyText}
                 placeholder={languageText.placeholderText}
@@ -618,7 +617,9 @@ useFocusEffect(
                   source={require("../../assets/images/congratulation.png")} // Replace with your image path
                   style={styles.congratulationsImage}
                 />
-                <Text style={styles.modalTitle}>Congratulations!</Text>
+                <Text style={styles.modalTitle}>
+                  {languageText.congratulations}
+                </Text>
                 <Text style={styles.modalText}>{languageText.dailyGoal}</Text>
                 <TouchableOpacity
                   onPress={() => setShowCongrats(false)}
@@ -668,7 +669,6 @@ const InfoCard: React.FC<InfoCardProps> = ({ icon, title, info, onPress }) => {
         <Text style={styles.cardTitle}>{title}</Text>
         <Text style={styles.cardInfo}>{info}</Text>
       </View>
-      
     </TouchableOpacity>
   );
 };
@@ -719,14 +719,14 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 40,
     textAlign: "center",
-    width: '50%',
-    alignSelf: 'center',
+    width: "50%",
+    alignSelf: "center",
     color: "#e1f6f2",
     marginBottom: -20,
   },
   infoContainer: {
     marginBottom: 10,
-    marginTop:10,
+    marginTop: 10,
   },
   cardRow: {
     flexDirection: "row",
@@ -775,14 +775,13 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     alignItems: "center",
     bottom: 70,
-    width: '50%',
-    alignSelf: 'center',
-
+    width: "50%",
+    alignSelf: "center",
   },
   dateText: {
     fontSize: 16,
     color: "#fff",
-    fontWeight: '600',
+    fontWeight: "600",
   },
   dailyRoutineContainer: {
     marginTop: 10,
@@ -790,7 +789,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: "#f0f0f0",
     bottom: 60,
-  marginBottom: -30,
+    marginBottom: -30,
   },
   dailyRoutineTitle: {
     fontSize: 20,

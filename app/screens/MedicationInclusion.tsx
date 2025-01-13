@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
-  Text,
+  Text as RNText,
   View,
   StyleSheet,
   ScrollView,
@@ -11,14 +11,33 @@ import {
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import Icon from "react-native-vector-icons/Ionicons";
+import CustomAlert from "../components/CustomAlert";
 
+// Custom Text component to disable font scaling globally
+const Text = (props: any) => {
+  return <RNText {...props} allowFontScaling={false} />;
+};
 
 const medications = [
-  { type: "pill", name: "Tablet", dosage: "500 mg - Before food", count: "1/20" },
-  { type: "syrup", name: "Syrup 1", dosage: "50 ml - After food", count: "2/10" },
-  { type: "pill", name: "Capsule", dosage: "500 mg - Before food", count: "1/10" },
+  {
+    type: "pill",
+    name: "Tablet",
+    dosage: "500 mg - Before food",
+    count: "1/20",
+  },
+  {
+    type: "syrup",
+    name: "Syrup 1",
+    dosage: "50 ml - After food",
+    count: "2/10",
+  },
+  {
+    type: "pill",
+    name: "Capsule",
+    dosage: "500 mg - Before food",
+    count: "1/10",
+  },
 ];
-
 
 // Define types for selectedMedications state
 type TimeOfDay = "Morning" | "Afternoon" | "Evening" | "Night";
@@ -26,17 +45,21 @@ type SelectedMedicationsState = {
   [key in TimeOfDay]: number[];
 };
 
-
 const PatientMedication: React.FC = () => {
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [activeTime, setActiveTime] = useState("");
-  const [selectedMedications, setSelectedMedications] = useState<SelectedMedicationsState>({
-    Morning: [],
-    Afternoon: [],
-    Evening: [],
-    Night: [],
-  });
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState('');
+  const [alertMessage, setAlertMessage] = useState('');
+
+  const [selectedMedications, setSelectedMedications] =
+    useState<SelectedMedicationsState>({
+      Morning: [],
+      Afternoon: [],
+      Evening: [],
+      Night: [],
+    });
 
   const updateActiveTime = () => {
     const hours = new Date().getHours();
@@ -52,20 +75,31 @@ const PatientMedication: React.FC = () => {
   };
 
   const handleSubmit = useCallback(() => {
-    Alert.alert("Submitted", "Your data has been submitted successfully.");
+    //Alert.alert("Submitted", "Your data has been submitted successfully.");
+    setAlertTitle('Submitted');
+    setAlertMessage('Your data has been submitted successfully.');
   }, []);
 
   const handleClear = useCallback(() => {
-    setSelectedMedications({ Morning: [], Afternoon: [], Evening: [], Night: [] });
-    Alert.alert("Cleared", "Your data has been cleared successfully.");
+    setSelectedMedications({
+      Morning: [],
+      Afternoon: [],
+      Evening: [],
+      Night: [],
+    });
+    //Alert.alert("Cleared", "Your data has been cleared successfully.");
+    setAlertTitle('Cleared');
+    setAlertMessage('Your data has been cleared successfully.');
   }, []);
 
   const handleCancel = useCallback(() => {
-    Alert.alert("Cancelled", "Your data has been cancelled successfully.");
+    //Alert.alert("Cancelled", "Your data has been cancelled successfully.");
+    setAlertTitle('Cancelled');
+    setAlertMessage('Your data has been cancelled successfully.');
   }, []);
 
   const handleTranslate = () => {
-    console.log('Translate button pressed');
+    console.log("Translate button pressed");
   };
 
   const onChange = (event: any, selectedDate?: Date) => {
@@ -100,7 +134,11 @@ const PatientMedication: React.FC = () => {
 
   return (
     <View style={styles.outerContainer}>
-      <ScrollView style={styles.container} showsHorizontalScrollIndicator={false} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.container}
+        showsHorizontalScrollIndicator={false}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.coverContainer}>
           <Text style={styles.title}>Medication Information</Text>
         </View>
@@ -108,9 +146,14 @@ const PatientMedication: React.FC = () => {
         {/* DatePicker and Translate Button */}
         <View style={styles.datePickerTranslateContainer}>
           <View style={styles.datePickerContainer}>
-            <TouchableOpacity style={styles.datePickerButton} onPress={showPicker}>
+            <TouchableOpacity
+              style={styles.datePickerButton}
+              onPress={showPicker}
+            >
               <Icon name="calendar" size={22} color="#808080" />
-              <Text style={styles.datePickerText}>{date.toLocaleDateString()}</Text>
+              <Text style={styles.datePickerText}>
+                {date.toLocaleDateString()}
+              </Text>
             </TouchableOpacity>
 
             {showDatePicker && (
@@ -129,66 +172,74 @@ const PatientMedication: React.FC = () => {
 
         <View style={styles.separator} />
 
-        {(["Morning", "Afternoon", "Evening", "Night"] as TimeOfDay[]).map((timeOfDay) => (
-  <View key={timeOfDay}>
-    <Text style={styles.morningMedicationText}>{timeOfDay} Medication</Text>
-    <View style={styles.morningMedicationContainer}>
-  {medications.map((medication, index) => (
-    <View key={index} style={styles.medicationWrapper}>
-      <TouchableOpacity
-        style={[
-          styles.medicationContainer,
-          selectedMedications[timeOfDay].includes(index) && {
-            backgroundColor: "#f4fff3",
-            borderColor: "#13bd13",
-            borderWidth: 1,
-          },
-        ]}
-        onPress={() => toggleSelection(timeOfDay, index)}
-      >
-        <View style={styles.medicationItemContainer}>
-          <Image
-            source={
-              medication.type === "pill"
-                ? require("../../assets/images/pill.png")
-                : require("../../assets/images/syrup.png")
-            }
-            style={styles.iconMedication}
-          />
-          <View style={styles.medicationTextContainer}>
-            <Text style={styles.medicationItem}>
-              <Text style={styles.boldText}>{medication.name}</Text>
-            </Text>
-            <Text style={styles.medicationDetails}>{medication.dosage}</Text>
-
-            {/* Start and End Dates from Previous Screen */}
-            <View style={styles.datesContainer}>
-              <Text style={styles.medicationDetails}>
-                <Text style={styles.dateText}>Start Date: </Text>
-                {/* {startDate ? startDate.toLocaleDateString() : 'Not set'} */}
-                {' | '} {/* Separator between dates */}
-                <Text style={styles.dateText}>End Date: </Text>
-                {/* {endDate ? endDate.toLocaleDateString() : 'Not set'} */}
+        {(["Morning", "Afternoon", "Evening", "Night"] as TimeOfDay[]).map(
+          (timeOfDay) => (
+            <View key={timeOfDay}>
+              <Text style={styles.morningMedicationText}>
+                {timeOfDay} Medication
               </Text>
+              <View style={styles.morningMedicationContainer}>
+                {medications.map((medication, index) => (
+                  <View key={index} style={styles.medicationWrapper}>
+                    <TouchableOpacity
+                      style={[
+                        styles.medicationContainer,
+                        selectedMedications[timeOfDay].includes(index) && {
+                          backgroundColor: "#f4fff3",
+                          borderColor: "#13bd13",
+                          borderWidth: 1,
+                        },
+                      ]}
+                      onPress={() => toggleSelection(timeOfDay, index)}
+                    >
+                      <View style={styles.medicationItemContainer}>
+                        <Image
+                          source={
+                            medication.type === "pill"
+                              ? require("../../assets/images/pill.png")
+                              : require("../../assets/images/syrup.png")
+                          }
+                          style={styles.iconMedication}
+                        />
+                        <View style={styles.medicationTextContainer}>
+                          <Text style={styles.medicationItem}>
+                            <Text style={styles.boldText}>
+                              {medication.name}
+                            </Text>
+                          </Text>
+                          <Text style={styles.medicationDetails}>
+                            {medication.dosage}
+                          </Text>
+
+                          {/* Start and End Dates from Previous Screen */}
+                          <View style={styles.datesContainer}>
+                            <Text style={styles.medicationDetails}>
+                              <Text style={styles.dateText}>Start Date: </Text>
+                              {/* {startDate ? startDate.toLocaleDateString() : 'Not set'} */}
+                              {" | "} {/* Separator between dates */}
+                              <Text style={styles.dateText}>End Date: </Text>
+                              {/* {endDate ? endDate.toLocaleDateString() : 'Not set'} */}
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+                      <Text style={styles.medicationDetail}>
+                        <Text style={styles.boldText}>Note:</Text> Please take
+                        your medication at the scheduled time.
+                      </Text>
+                    </TouchableOpacity>
+
+                    {/* White Box next to Medication Container */}
+                    <View style={styles.whiteBox}>
+                      <Text style={styles.whiteBoxText}>1/10 </Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+              <View style={styles.separator} />
             </View>
-          </View>
-        </View>
-        <Text style={styles.medicationDetail}>
-          <Text style={styles.boldText}>Note:</Text> Please take your medication at the scheduled time.
-        </Text>
-      </TouchableOpacity>
-
-      {/* White Box next to Medication Container */}
-      <View style={styles.whiteBox}>
-      <Text style={styles.whiteBoxText}>1/10 </Text>
-      </View>
-    </View>
-  ))}
-</View>
-<View style={styles.separator} />
-  </View>
-))}
-
+          )
+        )}
       </ScrollView>
 
       <View style={styles.footer}>
@@ -205,7 +256,6 @@ const PatientMedication: React.FC = () => {
     </View>
   );
 };
-
 
 const styles = StyleSheet.create({
   outerContainer: {
@@ -230,28 +280,28 @@ const styles = StyleSheet.create({
     marginBottom: -10,
   },
   datesContainer: {
-    flexDirection: 'row',
-    alignItems: 'center', // Align items vertically centered
-    marginVertical: 5,    // Adjust margin as needed
+    flexDirection: "row",
+    alignItems: "center", // Align items vertically centered
+    marginVertical: 5, // Adjust margin as needed
   },
   title: {
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: "bold",
     color: "#36454F",
     textAlign: "center",
     marginVertical: 5,
   },
   datePickerTranslateContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
     marginVertical: 15,
   },
   datePickerContainer: {
-    width: '50%',
+    width: "50%",
     alignItems: "center",
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     marginBottom: 0,
   },
   datePickerButton: {
@@ -271,18 +321,18 @@ const styles = StyleSheet.create({
     marginLeft: 20,
   },
   translateButton: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 20,
-    width: '35%',
+    width: "35%",
     marginLeft: 10,
   },
   translateButtonText: {
-    color: '#585858',
+    color: "#585858",
     fontSize: 15,
     textAlign: "center",
-    fontWeight: '600',
+    fontWeight: "600",
   },
   tilesContainer: {
     alignItems: "center",
@@ -344,11 +394,11 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   medicationWrapper: {
-    flexDirection: 'row', // Aligns the medication container and the white box horizontally
-    alignItems: 'flex-start', // Adjust alignment as needed
+    flexDirection: "row", // Aligns the medication container and the white box horizontally
+    alignItems: "flex-start", // Adjust alignment as needed
     marginBottom: 10, // Spacing between medication items
   },
-  
+
   medicationList: {
     paddingVertical: 5,
   },
@@ -359,17 +409,17 @@ const styles = StyleSheet.create({
     //borderRadius: 30,
     elevation: 1,
     marginVertical: -8,
-    width: '73%',
+    width: "73%",
   },
   whiteBox: {
-    width: '26%',
-    height: '91%',
+    width: "26%",
+    height: "91%",
     bottom: 9,
-    backgroundColor: 'white',
+    backgroundColor: "white",
     marginLeft: 3,
     borderRadius: 0,
     shadowColor: "#000",
-    
+
     shadowOffset: {
       width: 0,
       height: 1,
@@ -380,10 +430,10 @@ const styles = StyleSheet.create({
   },
   whiteBoxText: {
     fontSize: 22,
-    color: '#686868',
-    fontWeight: 'bold',
-    textAlign: 'center',
-    alignSelf: 'center',
+    color: "#686868",
+    fontWeight: "bold",
+    textAlign: "center",
+    alignSelf: "center",
     top: 50,
   },
   medicationItemContainer: {
@@ -409,7 +459,7 @@ const styles = StyleSheet.create({
   medicationDetails: {
     fontSize: 14,
     color: "#808080",
-    fontWeight: '700',
+    fontWeight: "700",
     marginBottom: 5,
     marginTop: 5,
   },
@@ -424,7 +474,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#505050",
   },
-  dateText:{
+  dateText: {
     fontWeight: "700",
     color: "#505050",
   },
@@ -434,8 +484,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     backgroundColor: "#fff",
     elevation: 5,
-    width: '100%',
-    
+    width: "100%",
   },
   submitButton: {
     flex: 1,

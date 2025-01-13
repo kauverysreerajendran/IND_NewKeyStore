@@ -1,6 +1,6 @@
 import {
   View,
-  Text,
+  Text as RNText,
   StyleSheet,
   TouchableOpacity,
   Image,
@@ -18,6 +18,10 @@ import { RootStackParamList } from "../../type";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { useCallback, useState } from "react";
 
+// Custom Text component to disable font scaling globally
+const Text = (props: any) => {
+  return <RNText {...props} allowFontScaling={false} />;
+};
 
 const DietaryChange = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
@@ -93,63 +97,55 @@ const DietaryChange = () => {
               <View style={styles.content}>
                 <View style={styles.bulletPoint}>
                   <Ionicons name="leaf" size={20} color="#5a8321" />
+                  <Text style={styles.contentText}>{languageText.dietOne}</Text>
+                </View>
+                <View style={styles.bulletPoint}>
+                  <Ionicons name="leaf" size={20} color="#5a8321" />
+                  <Text style={styles.contentText}>{languageText.dietTwo}</Text>
+                </View>
+                <View style={styles.bulletPoint}>
+                  <Ionicons name="leaf" size={20} color="#5a8321" />
                   <Text style={styles.contentText}>
-                    {languageText.dietOne}
+                    {languageText.dietThree}
                   </Text>
                 </View>
                 <View style={styles.bulletPoint}>
                   <Ionicons name="leaf" size={20} color="#5a8321" />
                   <Text style={styles.contentText}>
-                  {languageText.dietTwo}
+                    {languageText.dietFour}
                   </Text>
                 </View>
                 <View style={styles.bulletPoint}>
                   <Ionicons name="leaf" size={20} color="#5a8321" />
                   <Text style={styles.contentText}>
-                  {languageText.dietThree}
+                    {languageText.dietFive}
+                  </Text>
+                </View>
+                <View style={styles.bulletPoint}>
+                  <Ionicons name="leaf" size={20} color="#5a8321" />
+                  <Text style={styles.contentText}>{languageText.dietSix}</Text>
+                </View>
+                <View style={styles.bulletPoint}>
+                  <Ionicons name="leaf" size={20} color="#5a8321" />
+                  <Text style={styles.contentText}>
+                    {languageText.dietSeven}
                   </Text>
                 </View>
                 <View style={styles.bulletPoint}>
                   <Ionicons name="leaf" size={20} color="#5a8321" />
                   <Text style={styles.contentText}>
-                  {languageText.dietFour}
+                    {languageText.dietEight}
                   </Text>
                 </View>
                 <View style={styles.bulletPoint}>
                   <Ionicons name="leaf" size={20} color="#5a8321" />
                   <Text style={styles.contentText}>
-                  {languageText.dietFive}
+                    {languageText.dietNine}
                   </Text>
                 </View>
                 <View style={styles.bulletPoint}>
                   <Ionicons name="leaf" size={20} color="#5a8321" />
-                  <Text style={styles.contentText}>
-                  {languageText.dietSix}
-                  </Text>
-                </View>
-                <View style={styles.bulletPoint}>
-                  <Ionicons name="leaf" size={20} color="#5a8321" />
-                  <Text style={styles.contentText}>
-                  {languageText.dietSeven}
-                  </Text>
-                </View>
-                <View style={styles.bulletPoint}>
-                  <Ionicons name="leaf" size={20} color="#5a8321" />
-                  <Text style={styles.contentText}>
-                  {languageText.dietEight}
-                  </Text>
-                </View>
-                <View style={styles.bulletPoint}>
-                  <Ionicons name="leaf" size={20} color="#5a8321" />
-                  <Text style={styles.contentText}>
-                  {languageText.dietNine}
-                  </Text>
-                </View>
-                <View style={styles.bulletPoint}>
-                  <Ionicons name="leaf" size={20} color="#5a8321" />
-                  <Text style={styles.contentText}>
-                  {languageText.dietTen}
-                  </Text>
+                  <Text style={styles.contentText}>{languageText.dietTen}</Text>
                 </View>
               </View>
             </View>
@@ -166,6 +162,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     marginTop: 50,
     padding: 15,
+    marginBottom: -60,
   },
   safeArea: {
     flex: 1,

@@ -146,7 +146,7 @@ const WaterPage: React.FC = () => {
     }),
   ]).start(() => {
     // Hide the modal after animations are complete
-    setTimeout(() => setShowCongrats(false), 3000); // Hide the modal after 3 seconds
+    setTimeout(() => setShowCongrats(false), 2500); // Hide the modal after 3 seconds
   });
 };
 
@@ -434,7 +434,7 @@ const triggerConfetti = () => {
                   source={require("../../assets/images/congratulation.png")} // Replace with your image path
                   style={styles.congratulationsImage}
                 />
-                <Text style={styles.modalTitle}>Congratulations!</Text>
+                <Text style={styles.modalTitle}>{languageText.congratulations}</Text>
                 <Text style={styles.modalText}>{languageText.dailyGoal}</Text>
               </View>
             </View>

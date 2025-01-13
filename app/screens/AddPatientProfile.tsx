@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import {
   View,
-  Text,
+  Text as RNText,
   StyleSheet,
   TextInput,
   Alert,
@@ -21,6 +21,13 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../../type";
 import { createPatient } from "../services/apiService";
 import Icon from "react-native-vector-icons/Ionicons";
+import { RFValue } from "react-native-responsive-fontsize"; // If you choose to use responsive font size library
+import CustomAlert from "../components/CustomAlert";
+
+// Custom Text component to disable font scaling globally
+const Text = (props: any) => {
+  return <RNText {...props} allowFontScaling={false} />;
+};
 
 type AddPatientProfileNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -69,6 +76,12 @@ const AddPatientProfile: React.FC = () => {
   const [currentPickerValue, setCurrentPickerValue] = useState<string | null>(
     null
   );
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState("");
+  const [alertMessage, setAlertMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [cancelAlertVisible, setCancelAlertVisible] = useState(false);
+  const [regularAlertVisible, setRegularAlertVisible] = useState(false);
 
   const navigation = useNavigation<AddPatientProfileNavigationProp>();
   useEffect(() => {
@@ -80,13 +93,27 @@ const AddPatientProfile: React.FC = () => {
         const data = await response.json();
         setPatientID(data.next_patient_id);
       } catch (error) {
-        Alert.alert("Error", "Failed to fetch the next patient ID.");
+        //Alert.alert("Error", "Failed to fetch the next patient ID.");
+        setAlertTitle("Error");
+        setAlertMessage("Failed to fetch the next patient ID.");
       }
     };
 
     fetchNextPatientID();
   }, []);
+
+  // Function to handle input change and restrict to 3 digits
+  const handleAgeChange = (text: string) => {
+    // Allow only numeric values and restrict to a maximum of 3 digits
+    if (/^\d{0,3}$/.test(text)) {
+      setAge(text);
+    }
+  };
+
   const handleSave = async () => {
+    if (isSubmitting) return; // Prevent multiple submissions
+
+    setIsSubmitting(true);
     if (
       !patientID ||
       !patientName ||
@@ -101,10 +128,14 @@ const AddPatientProfile: React.FC = () => {
       !phone ||
       !emergency
     ) {
-      Alert.alert(
+      /* Alert.alert(
         "Validation Error",
         "Please fill in all required fields before saving."
-      );
+      ); */
+      setAlertTitle("Validation Error");
+      setAlertMessage("Please fill in all required fields before saving.");
+      setAlertVisible(true);
+      setIsSubmitting(false); // Reset isSubmitting once form validation fails
       return;
     }
 
@@ -125,19 +156,20 @@ const AddPatientProfile: React.FC = () => {
 
     try {
       await createPatient(newPatientData);
-      Alert.alert(
-        "Form Submitted",
-        "Patient Information has been saved successfully!",
-        [{ text: "OK" }]
-      );
+      setAlertTitle("Form Submitted");
+      setAlertMessage("Patient Information has been saved successfully!");
+      setAlertVisible(true); // Show the custom alert
       handleClear(); // Clear the form after successful submission
       navigation.navigate("AddClinicalProfilePage"); // Navigate to AddClinicalProfile screen
     } catch (error: any) {
-      Alert.alert(
-        "Error",
+      setAlertTitle("Error");
+      setAlertMessage(
         error.message || "An error occurred while saving the data."
       );
+      setAlertVisible(true);
     }
+
+    setIsSubmitting(false);
   };
 
   const handleClear = () => {
@@ -154,7 +186,7 @@ const AddPatientProfile: React.FC = () => {
     setPatientContactNumber(null);
   };
 
-  const handleCancel = () => {
+  /*  const handleCancel = () => {
     Alert.alert("Cancel", "Are you sure you want to cancel?", [
       {
         text: "No",
@@ -168,8 +200,11 @@ const AddPatientProfile: React.FC = () => {
         },
       },
     ]);
-  };
+  }; */
 
+  const handleCancel = () => {
+    setCancelAlertVisible(true);
+  };
   const handleViewSubmittedData = () => {
     console.log("Navigating to Adding clinical Data");
     navigation.navigate("AddClinicalProfilePage");
@@ -207,7 +242,6 @@ const AddPatientProfile: React.FC = () => {
     { label: "Male", value: "Male" },
     { label: "Female", value: "Female" },
     { label: "Other", value: "Other" },
-    
   ];
   const educationOptions: PickerOption[] = [
     { label: "High School", value: "High School" },
@@ -246,7 +280,23 @@ const AddPatientProfile: React.FC = () => {
   const renderItem = ({ item }: { item: FormField }) => {
     return (
       <View style={styles.fieldContainer}>
-        <Text style={styles.label}>{item.label}:</Text>
+        {/* Cancel confirmation with Yes/No buttons */}
+        <CustomAlert
+          title="Cancel"
+          message="Are you sure you want to cancel?"
+          visible={cancelAlertVisible}
+          onClose={() => setCancelAlertVisible(false)}
+          mode="confirm"
+          onYes={() => {
+            handleClear();
+            navigation.navigate("AdminDashboardPage");
+          }}
+          onNo={() => setCancelAlertVisible(false)}
+        />
+
+        <Text style={[styles.label, { allowFontScaling: false }]}>
+          {item.label}:
+        </Text>
         {item.type === "text" ? (
           <TextInput
             style={styles.input}
@@ -329,7 +379,7 @@ const AddPatientProfile: React.FC = () => {
       label: "Age",
       type: "text",
       value: age,
-      onChange: setAge,
+      onChange: handleAgeChange,
       keyboardType: "numeric",
     },
     {
@@ -549,7 +599,7 @@ const styles = StyleSheet.create({
     top: Platform.OS === "ios" ? 60 : 60,
     left: 30,
     right: 0,
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: "bold",
     textAlign: "center",
     color: "#000",
@@ -584,7 +634,7 @@ const styles = StyleSheet.create({
   },
 
   label: {
-    fontSize: 16,
+    fontSize: RFValue(16),
     fontWeight: "500",
     flex: 1,
   },
@@ -592,10 +642,10 @@ const styles = StyleSheet.create({
     height: 40,
     borderColor: "#d3d3d3",
     borderWidth: 1,
-    borderRadius: 15,
+    borderRadius: 55,
     paddingHorizontal: 10,
-    fontSize: 14,
-    flex: 2, // Takes up space on the right
+    fontSize: RFValue(9),
+    flex: 2,
     marginTop: 10,
   },
   closeButton: {
@@ -608,7 +658,7 @@ const styles = StyleSheet.create({
     height: 40,
     borderColor: "#d3d3d3",
     borderWidth: 1,
-    borderRadius: 15,
+    borderRadius: 55,
     justifyContent: "center",
     paddingHorizontal: 10,
     fontSize: 12,
@@ -633,10 +683,10 @@ const styles = StyleSheet.create({
   },
   buttonGroupButton: {
     flex: 1,
-    padding: 12,
+    padding: 8,
     borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 15,
+    borderColor: "#d9d7d7",
+    borderRadius: 55,
     backgroundColor: "#fff",
     marginHorizontal: 5, // Adjust margin between buttons
     alignItems: "center",

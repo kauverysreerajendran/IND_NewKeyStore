@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import {
   View,
-  Text,
+  Text as RNText,
   TextInput,
   StyleSheet,
   TouchableOpacity,
@@ -18,6 +18,9 @@ import axios from "axios";
 import { Button } from "react-native";
 import * as FileSystem from "expo-file-system";
 import * as Sharing from "expo-sharing";
+
+// Custom Text component to disable font scaling globally 
+const Text = (props: any) => { return <RNText {...props} allowFontScaling={false} />; };
 
 interface PatientDetails {
   patient_id: string; // Ensure this is defined
@@ -653,6 +656,7 @@ const styles = StyleSheet.create({
     padding: 15,
     backgroundColor: "#fff",
     marginTop: 50,
+    
   },
   header: {
     flexDirection: "row",

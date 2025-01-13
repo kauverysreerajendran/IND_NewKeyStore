@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
   View,
-  Text,
+  Text as RNText,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
@@ -20,6 +20,10 @@ import Icon from "react-native-vector-icons/FontAwesome";
 import * as FileSystem from "expo-file-system";
 import * as Sharing from "expo-sharing";
 import { Buffer } from "buffer"; // Import buffer from npm
+// Custom Text component to disable font scaling globally
+const Text = (props: any) => {
+  return <RNText {...props} allowFontScaling={false} />;
+};
 
 // Define the navigation prop type
 type ViewPatientTablePageNavigationProp = NavigationProp<
@@ -257,9 +261,10 @@ const ViewPatientTablePage: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    padding: 20,
+    padding: 10,
     backgroundColor: "#ffffff",
-    marginTop: 50,
+    paddingTop: 60,
+    
   },
 
   topLeftImageContainer: {

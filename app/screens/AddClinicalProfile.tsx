@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import {
   View,
-  Text,
+  Text as RNText,
   StyleSheet,
   TextInput,
   Alert,
@@ -19,6 +19,13 @@ import { RootStackParamList } from "../../type";
 import { createClinical } from "../services/apiService";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import Icon from "react-native-vector-icons/MaterialIcons"; // Import the icon library
+import { RFValue } from "react-native-responsive-fontsize"; // If you choose to use responsive font size library
+// Custom Text component to disable font scaling globally
+import CustomAlert from "../components/CustomAlert";
+
+const Text = (props: any) => {
+  return <RNText {...props} allowFontScaling={false} />;
+};
 
 type AddClinicalProfileNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -59,13 +66,10 @@ const AddClinicalProfilePage: React.FC = () => {
   // const [nextFollowUpDate, setNextFollowUpDate] = useState<string>("");
   const [dateOfOperation, setDateOfOperation] = useState<string>("");
   const [nextFollowUpDate, setNextFollowUpDate] = useState<string | null>(null);
-
   const [showDatePicker, setShowDatePicker] = useState(false);
-
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
   const [dateField, setDateField] = useState<string>("");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-
   const [pickerModalVisible, setPickerModalVisible] = useState<boolean>(false);
   const [currentPickerOptions, setCurrentPickerOptions] = useState<
     PickerOption[]
@@ -74,7 +78,14 @@ const AddClinicalProfilePage: React.FC = () => {
   const [currentPickerValue, setCurrentPickerValue] = useState<string | null>(
     null
   );
-
+  const [cancelAlertVisible, setCancelAlertVisible] = useState(false);
+  const [regularAlertVisible, setRegularAlertVisible] = useState(false);
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState("");
+  const [alertMessage, setAlertMessage] = useState("");
+  const [successAlertVisible, setSuccessAlertVisible] = useState(false);
+  const [errorAlertVisible, setErrorAlertVisible] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const navigation = useNavigation<AddClinicalProfileNavigationProp>();
 
   useEffect(() => {
@@ -94,7 +105,9 @@ const AddClinicalProfilePage: React.FC = () => {
           setPatientID(options[options.length - 1].value);
         }
       } catch (error) {
-        Alert.alert("Error", "Failed to fetch patient IDs.");
+        //Alert.alert("Error", "Failed to fetch patient IDs.");
+        setAlertTitle("Error");
+        setAlertMessage("Failed to fetch patient IDs.");
       }
     };
 
@@ -120,7 +133,9 @@ const AddClinicalProfilePage: React.FC = () => {
 
       if (dateField === "nextFollowUpDate") {
         if (date < today) {
-          Alert.alert("Invalid Date", "Please select a valid future date.");
+          //Alert.alert("Invalid Date", "Please select a valid future date.");
+          setAlertTitle("Invalid Date");
+          setAlertMessage("Please select a valid future date.");
           return;
         }
         setNextFollowUpDate(formattedDate);
@@ -148,10 +163,12 @@ const AddClinicalProfilePage: React.FC = () => {
       !nextFollowUpDate ||
       !dateOfOperation
     ) {
-      Alert.alert(
+      /* Alert.alert(
         "Validation Error",
         "Please fill in all required fields before saving."
-      );
+      ); */
+      setAlertTitle("Validation Error");
+      setAlertMessage("Please fill in all required fields before saving.");
       return;
     }
 
@@ -172,18 +189,13 @@ const AddClinicalProfilePage: React.FC = () => {
 
     try {
       await createClinical(newclinicalData);
-      Alert.alert(
-        "Form Submitted",
-        "Clinical Information has been saved successfully!",
-        [{ text: "OK" }]
-      );
+      setSuccessAlertVisible(true);
       handleClear(); // Clear the form after successful submission
-      navigation.navigate("AddMetabolicProfilePage"); // Navigate to AddClinicalProfile screen
     } catch (error: any) {
-      Alert.alert(
-        "Error",
+      setErrorMessage(
         error.message || "An error occurred while saving the data."
       );
+      setErrorAlertVisible(true);
     }
   };
 
@@ -199,7 +211,7 @@ const AddClinicalProfilePage: React.FC = () => {
     setDateOfOperation("");
   };
 
-  const handleCancel = () => {
+  /* const handleCancel = () => {
     Alert.alert("Cancel", "Are you sure you want to cancel?", [
       {
         text: "No",
@@ -210,10 +222,13 @@ const AddClinicalProfilePage: React.FC = () => {
         onPress: () => {
           handleClear();
           navigation.navigate("AdminDashboardPage");
-        
         },
       },
     ]);
+  }; */
+
+  const handleCancel = () => {
+    setCancelAlertVisible(true);
   };
 
   const openPickerModal = (
@@ -237,6 +252,38 @@ const AddClinicalProfilePage: React.FC = () => {
   const renderItem = ({ item }: { item: FormField }) => {
     return (
       <View style={styles.fieldContainer}>
+        <CustomAlert
+          title="Form Submitted"
+          message="Clinical Information has been saved successfully!"
+          visible={successAlertVisible}
+          onClose={() => setSuccessAlertVisible(false)}
+          mode="ok"
+          onOk={() => {
+            setSuccessAlertVisible(false);
+            navigation.navigate("AddMetabolicProfilePage");
+          }}
+        />
+
+        <CustomAlert
+          title="Error"
+          message={errorMessage}
+          visible={errorAlertVisible}
+          onClose={() => setErrorAlertVisible(false)}
+          mode="ok"
+        />
+
+        <CustomAlert
+          title="Cancel"
+          message="Are you sure you want to cancel?"
+          visible={cancelAlertVisible}
+          onClose={() => setCancelAlertVisible(false)}
+          mode="confirm"
+          onYes={() => {
+            handleClear();
+            navigation.navigate("AdminDashboardPage");
+          }}
+          onNo={() => setCancelAlertVisible(false)}
+        />
         <Text style={styles.label}>{item.label}:</Text>
 
         {item.type === "text" ? (
@@ -528,7 +575,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   fieldName: {
-    fontSize: 18,
+    fontSize: RFValue(18),
     marginBottom: 5,
   },
   textInput: {
@@ -589,7 +636,7 @@ const styles = StyleSheet.create({
   datePickerContainer: {},
 
   label: {
-    fontSize: 16,
+    fontSize: RFValue(14),
     fontWeight: "500",
     flex: 1, // Takes up space on the left
   },
@@ -599,7 +646,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 15,
     paddingHorizontal: 10,
-    fontSize: 14,
+    fontSize: RFValue(10),
     flex: 2, // Takes up space on the right
     marginTop: 10,
     textAlignVertical: "center",
@@ -701,9 +748,15 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    //backgroundColor: "rgba(0, 0, 0, 0.5)",
+    position: "absolute", // Ensure it is positioned on top of everything else
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: "center", // Center content vertically
+    alignItems: "center", // Center content horizontally
+    backgroundColor: "rgba(0, 0, 0, 0.5)", // Dim the background
+    zIndex: 9999, // Ensure the modal stays above other content
   },
   modalContent: {
     width: "60%", // You can adjust this width

@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, ScrollView, Alert, Platform, TouchableOpacity, SafeAreaView, StatusBar } from 'react-native';
+import { View, Text as RNText, TextInput, StyleSheet, ScrollView, Alert, Platform, TouchableOpacity, SafeAreaView, StatusBar } from 'react-native';
 import { Picker} from '@react-native-picker/picker';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+
+// Custom Text component to disable font scaling globally 
+const Text = (props: any) => { return <RNText {...props} allowFontScaling={false} />; };
+
 const AddUserProfilePage: React.FC = () => {
   const [name, setName] = useState('');
   const [age, setAge] = useState('');

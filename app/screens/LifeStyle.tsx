@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from "react";
 import {
-  Text,
+  Text as RNText,
   View,
   StyleSheet,
   TouchableOpacity,
@@ -23,6 +23,13 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import texts from "../translation/texts";
+import CustomAlert from "../components/CustomAlert";
+import { RFValue } from "react-native-responsive-fontsize";
+
+// Custom Text component to disable font scaling globally
+const Text = (props: any) => {
+  return <RNText {...props} allowFontScaling={false} />;
+};
 
 // Define the props type
 type YogaNavigationProp = StackNavigationProp<
@@ -57,7 +64,13 @@ const LifeStyleMonitoring: React.FC<WalkingProps> = ({ navigation }) => {
   const [patientDetails, setPatientDetails] = useState<PatientDetails | null>(
     null
   );
-
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState("");
+  const [alertMessage, setAlertMessage] = useState("");
+  const [cancelAlertVisible, setCancelAlertVisible] = useState(false);
+  const [successAlertVisible, setSuccessAlertVisible] = useState(false);
+  const [errorAlertVisible, setErrorAlertVisible] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   // Toggle between Tamil and English based on the button click
   const languageText = isTranslatingToTamil ? texts.tamil : texts.english;
 
@@ -74,10 +87,10 @@ const LifeStyleMonitoring: React.FC<WalkingProps> = ({ navigation }) => {
   }, []);
 
   //Device back button handling
-    useFocusEffect(
+  useFocusEffect(
     React.useCallback(() => {
       const backAction = () => {
-        Alert.alert("Cancel", "Are you sure you want to cancel?", [
+        /* Alert.alert("Cancel", "Are you sure you want to cancel?", [
           {
             text: "No",
             onPress: () => null,
@@ -87,18 +100,25 @@ const LifeStyleMonitoring: React.FC<WalkingProps> = ({ navigation }) => {
             text: "Yes",
             onPress: () => navigation.navigate("PatientDashboardPage"),
           },
-        ]);
+        ]); */
+        const handleCancel = () => {
+          setCancelAlertVisible(true);
+        };
         return true;
       };
-  
+
       const backHandler = BackHandler.addEventListener(
         "hardwareBackPress",
         backAction
       );
-  
+
       return () => backHandler.remove();
     }, [navigation])
   );
+
+  const handleSuccess = () => {
+    setSuccessAlertVisible(true);
+  };
 
   const fetchPatientDetails = async (phone: string) => {
     try {
@@ -137,7 +157,7 @@ const LifeStyleMonitoring: React.FC<WalkingProps> = ({ navigation }) => {
     console.log("Translate button pressed");
   };
 
-  const handleCancel = useCallback(() => {
+  /* const handleCancel = useCallback(() => {
     Alert.alert(
       "Confirm Cancel",
       "Are you sure you want to cancel?",
@@ -150,7 +170,10 @@ const LifeStyleMonitoring: React.FC<WalkingProps> = ({ navigation }) => {
       ],
       { cancelable: false }
     );
-  }, [navigation]);
+  }, [navigation]); */
+  const handleCancel = () => {
+    setCancelAlertVisible(true);
+  };
 
   const handleDateSelect = (event: any, date?: Date | undefined) => {
     setShowDatePicker(false);
@@ -181,22 +204,27 @@ const LifeStyleMonitoring: React.FC<WalkingProps> = ({ navigation }) => {
 
     if (question === "question1") {
       if (answer) {
-        Alert.alert("Warning", "Smoking is harmful to your health!");
+        //Alert.alert("Warning", "Smoking is harmful to your health!");
+        setAlertTitle("Warning");
+        setAlertMessage("Smoking is harmful to your health!");
       } else {
-        Alert.alert("Thank You!", "Your decision to not smoke is appreciated.");
+        //Alert.alert("Thank You!", "Your decision to not smoke is appreciated.");
+        setAlertTitle("Thank You!");
+        setAlertMessage("Your decision to not smoke is appreciated.");
         setSmokingCount(""); // Clear the input if they select "No"
       }
     } else if (question === "question2") {
       if (answer) {
-        Alert.alert(
-          "Reminder",
-          "Alcohol is harmful to your health!"
-        );
+        //Alert.alert("Reminder", "Alcohol is harmful to your health!");
+        setAlertTitle("Reminder");
+        setAlertMessage("Alcohol is harmful to your health!");
       } else {
-        Alert.alert(
+        /* Alert.alert(
           "Great Choice!",
           "Staying active contributes to a healthy lifestyle."
-        );
+        ); */
+        setAlertTitle("Great Choice!");
+        setAlertMessage("Staying active contributes to a healthy lifestyle.");
       }
     }
   };
@@ -213,9 +241,19 @@ const LifeStyleMonitoring: React.FC<WalkingProps> = ({ navigation }) => {
     }
   };
 
+  // Only declare the function once
+  const handleError = (message: string) => {
+    setAlertMessage(message);
+    setAlertTitle("Error");
+    setAlertVisible(true);
+  };
+
   const handleSubmit = async () => {
     if (!patientDetails || !selectedDate) {
-      Alert.alert("Error", "Patient details or date is missing.");
+      //("Error", "Patient details or date is missing.");
+      setAlertTitle("Error");
+      setAlertMessage("Patient details or date is missing.");
+      setAlertVisible(true);
       return;
     }
 
@@ -243,23 +281,21 @@ const LifeStyleMonitoring: React.FC<WalkingProps> = ({ navigation }) => {
         "https://indheart.pinesphere.in/patient/lifestyle-data/",
         payload
       );
-    
+
       // Show success alert and navigate
-      Alert.alert(
-        "Success",
-        "Your data has been saved successfully.",
-        [
-          {
-            text: "OK",
-            onPress: () => navigation.navigate("PatientDashboardPage"),
-          },
-        ]
-      );
-    
+      /* Alert.alert("Success", "Your data has been saved successfully.", [
+        {
+          text: "OK",
+          onPress: () => navigation.navigate("PatientDashboardPage"),
+        },
+      ]); */
+      // On success, show the success alert
+      handleSuccess();
+
       handleClear(); // Clear the form after successful submission
     } catch (error) {
       let errorMessage = "Failed to submit Lifestyle Details.";
-    
+
       if (axios.isAxiosError(error)) {
         if (error.response) {
           // Check if the error message indicates a unique constraint violation
@@ -269,21 +305,25 @@ const LifeStyleMonitoring: React.FC<WalkingProps> = ({ navigation }) => {
           } else {
             // General error response
             errorMessage =
-              error.response.data.detail || "Failed to submit Lifestyle Tracker.";
+              error.response.data.detail ||
+              "Failed to submit Lifestyle Tracker.";
           }
         } else if (error.request) {
           // No response received
-          errorMessage = "No response from server. Please check your connection.";
+          errorMessage =
+            "No response from server. Please check your connection.";
         }
       } else {
         // Non-Axios or general error
         errorMessage = (error as Error).message;
+        handleError(errorMessage); // Trigger custom error alert
       }
-    
+
       // Show the same success popup with the error message
-      Alert.alert("Error", errorMessage, [{ text: "OK" }]);
+      //Alert.alert("Error", errorMessage, [{ text: "OK" }]);
+      // On error, show the error alert with the error message
+      handleError(errorMessage);
     }
-    
   };
 
   const handleClear = useCallback(() => {
@@ -296,6 +336,25 @@ const LifeStyleMonitoring: React.FC<WalkingProps> = ({ navigation }) => {
 
   return (
     <SafeAreaProvider>
+      {/* Custom Alert for Submission Error */}
+      <CustomAlert
+        title={alertTitle} // Set dynamically based on submission result
+        message={alertMessage} // Set dynamically based on submission result
+        visible={alertVisible} // Controls visibility of the custom alert
+        onClose={() => setAlertVisible(false)} // Close the alert when the user presses OK
+      />
+      <CustomAlert
+        title="Cancel"
+        message="Are you sure you want to cancel?"
+        visible={cancelAlertVisible}
+        onClose={() => setCancelAlertVisible(false)}
+        mode="confirm"
+        onYes={() => {
+          navigation.navigate("PatientDashboardPage");
+        }}
+        onNo={() => setCancelAlertVisible(false)}
+      />
+
       <SafeAreaView style={styles.safeArea}>
         {/* Adjust StatusBar visibility */}
         <StatusBar

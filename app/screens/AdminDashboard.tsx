@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from "react";
 import {
   View,
-  Text,
+  Text as RNText,
   StyleSheet,
   Platform,
   Image,
@@ -17,6 +17,11 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../../type";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+
+// Custom Text component to disable font scaling globally
+const Text = (props: any) => {
+  return <RNText {...props} allowFontScaling={false} />;
+};
 
 type AdminDashboardPageNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -225,26 +230,40 @@ const AdminDashboardPage: React.FC = () => {
           <View style={styles.tilesSection}>
             <Text style={styles.tileTitle}>User Metrics</Text>
             <View style={styles.tilesContainer}>
-              <View style={[styles.tile, styles.tile1]}>
+              <TouchableOpacity
+                style={[styles.tile, styles.tile1]}
+                onPress={() => navigation.navigate("ViewPatientTablePage")}
+              >
                 <Text style={styles.largeNumber}>{metrics.total_patients}</Text>
                 <Text style={styles.tileLabel}>Total Users</Text>
-              </View>
-              <View style={[styles.tile, styles.tile2]}>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.tile, styles.tile2]}
+                onPress={() => navigation.navigate("ViewPatientTablePage")}
+              >
                 <Text style={styles.largeNumber}>
                   {metrics.active_patients}
                 </Text>
                 <Text style={styles.tileLabel}>Active Users</Text>
-              </View>
-              <View style={[styles.tile, styles.tile3]}>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.tile, styles.tile3]}
+                onPress={() => navigation.navigate("ViewPatientTablePage")}
+              >
                 <Text style={styles.largeNumber}>
                   {metrics.inactive_patients}
                 </Text>
                 <Text style={styles.tileLabel}>Inactive Users</Text>
-              </View>
-              <View style={[styles.tile, styles.tile4]}>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.tile, styles.tile4]}
+                onPress={() =>
+                  navigation.navigate("PatientDailyLogTableScreen")
+                }
+              >
                 <Text style={styles.largeNumber}>{metrics.patient_logs}</Text>
                 <Text style={styles.tileLabel}>User Logs</Text>
-              </View>
+              </TouchableOpacity>
             </View>
           </View>
 

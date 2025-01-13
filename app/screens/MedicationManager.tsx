@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import {
   View,
-  Text,
+  Text as RNText,
   TextInput,
   TouchableOpacity,
   StyleSheet,
@@ -14,7 +14,6 @@ import {
   Platform,
   Keyboard,
   BackHandler,
-
 } from "react-native";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { RootStackParamList } from "../../type";
@@ -24,6 +23,13 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useFocusEffect } from "@react-navigation/native";
+import { RFValue } from "react-native-responsive-fontsize"; // If you choose to use responsive font size library
+import CustomAlert from "../components/CustomAlert";
+// Custom Text component to disable font scaling globally
+const Text = (props: any) => {
+  return <RNText {...props} allowFontScaling={false} />;
+};
+
 type PatientProfileScreenNavigationProp = NavigationProp<
   RootStackParamList,
   "MedicationManager"
@@ -80,33 +86,45 @@ export default function MedicationManager() {
   const [showEndPicker, setShowEndPicker] = useState(false);
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
+  const [cancelAlertVisible, setCancelAlertVisible] = useState(false);
+  const [skipAlertVisible, setSkipAlertVisible] = useState(false);
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState("");
+  const [alertMessage, setAlertMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [regularAlertVisible, setRegularAlertVisible] = useState(false);
+  const [missingFieldsAlertVisible, setMissingFieldsAlertVisible] =
+    useState(false);
 
   //Device back button handling
-useFocusEffect(
-  React.useCallback(() => {
-    const backAction = () => {
-      Alert.alert("Cancel", "Are you sure you want to cancel?", [
-        {
-          text: "No",
-          onPress: () => null,
-          style: "cancel",
-        },
-        {
-          text: "Yes",
-          onPress: () => navigation.navigate("PatientDashboardPage"),
-        },
-      ]);
-      return true;
-    };
+  useFocusEffect(
+    React.useCallback(() => {
+      const backAction = () => {
+        /* Alert.alert("Cancel", "Are you sure you want to cancel?", [
+          {
+            text: "No",
+            onPress: () => null,
+            style: "cancel",
+          },
+          {
+            text: "Yes",
+            onPress: () => navigation.navigate("PatientDashboardPage"),
+          },
+        ]); */
 
-    const backHandler = BackHandler.addEventListener(
-      "hardwareBackPress",
-      backAction
-    );
+        setCancelAlertVisible(true);
 
-    return () => backHandler.remove();
-  }, [navigation])
-);
+        return true;
+      };
+
+      const backHandler = BackHandler.addEventListener(
+        "hardwareBackPress",
+        backAction
+      );
+
+      return () => backHandler.remove();
+    }, [navigation])
+  );
 
   useEffect(() => {
     const fetchPhoneNumber = async () => {
@@ -157,7 +175,9 @@ useFocusEffect(
           setPatientID(options[options.length - 1].value);
         }
       } catch (error) {
-        Alert.alert("Error", "Failed to fetch patient IDs.");
+        //Alert.alert("Error", "Failed to fetch patient IDs.");
+        setAlertTitle("Error");
+        setAlertMessage("Failed to fetch patient IDs.");
       }
     };
 
@@ -198,7 +218,7 @@ useFocusEffect(
         }
       );
       // Handle success response
-      Alert.alert("Success", "Medication details saved successfully!");
+      //Alert.alert("Success", "Medication details saved successfully!");
     } catch (error: unknown) {
       // Handle error response
 
@@ -240,10 +260,29 @@ useFocusEffect(
     setActionOfDrug("");
   };
 
-  const handleSkipAndSubmit = async () => {
+  /* const handleSkipAndSubmit = async () => {
     await handleSave(); // Save data without clearing the form
 
     handleClear(); // Clear other fields if needed
+  }; */
+  // Handle Skip and Submit logic
+  const handleSkipAndSubmit = async () => {
+    if (
+      !patientID ||
+      !medicationName ||
+      !route ||
+      !dosageAmt ||
+      !dosageType ||
+      !timeToTake ||
+      !whenToConsume ||
+      !actionOfDrug
+    ) {
+      // If some fields are missing, show the missing fields alert
+      setMissingFieldsAlertVisible(true);
+    } else {
+      // If all fields are filled, show the Skip and Submit confirmation alert
+      setSkipAlertVisible(true);
+    }
   };
 
   const handleClear = () => {
@@ -331,6 +370,42 @@ useFocusEffect(
 
   return (
     <View style={styles.container}>
+      <CustomAlert
+        title="Cancel"
+        message="Are you sure you want to cancel?"
+        visible={cancelAlertVisible}
+        onClose={() => setCancelAlertVisible(false)}
+        mode="confirm"
+        onYes={() => {
+          navigation.navigate("PatientDashboardPage");
+        }}
+        onNo={() => setCancelAlertVisible(false)}
+      />
+      {/* Missing Fields Alert */}
+      <CustomAlert
+        title="Missing Inputs"
+        message="Some required fields are missing. Please fill them out before proceeding."
+        visible={missingFieldsAlertVisible}
+        onClose={() => setMissingFieldsAlertVisible(false)} // Close on cancel
+        //mode="confirm" // Alert type
+        onYes={() => setMissingFieldsAlertVisible(false)} // Close alert
+      />
+
+      {/* Skip and Submit Confirmation Alert */}
+      <CustomAlert
+        title="Skip and Submit"
+        message="Are you sure you want to Skip and Submit?"
+        visible={skipAlertVisible}
+        onClose={() => setSkipAlertVisible(false)} // Close the alert on cancel
+        mode="confirm" // Yes/No buttons
+        onYes={async () => {
+          await handleSave(); // Save data without clearing the form
+          handleClear(); // Clear other fields if needed
+          setSkipAlertVisible(false); // Close the alert after confirming
+        }}
+        onNo={() => setSkipAlertVisible(false)} // Close the alert on No
+      />
+
       <Text style={styles.header}>Medication Manager</Text>
       {/* clear icon */}
       <View style={styles.clearIconContainer}>
@@ -460,7 +535,9 @@ useFocusEffect(
           />
         )}
 
-        <Text style={styles.label}>Route (e.g., oral, IV)</Text>
+        <Text style={[styles.label, { allowFontScaling: false }]}>
+          Route (e.g., oral, IV)
+        </Text>
         <TextInput
           style={styles.input}
           placeholder="Enter Route"
@@ -664,7 +741,7 @@ const styles = StyleSheet.create({
   clearIcon: {
     width: 30,
     height: 30,
-    borderRadius: 20,
+    borderRadius: 30,
     backgroundColor: "#fff",
     justifyContent: "center",
     alignItems: "center",
@@ -679,7 +756,7 @@ const styles = StyleSheet.create({
   cancelIcon: {
     width: 30,
     height: 30,
-    borderRadius: 20,
+    borderRadius: 30,
     backgroundColor: "#fff",
     justifyContent: "center",
     alignItems: "center",
@@ -717,7 +794,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   header: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: "500",
     marginBottom: 20,
     alignItems: "center",
@@ -725,15 +802,17 @@ const styles = StyleSheet.create({
     paddingLeft: 45,
   },
   label: {
-    fontSize: 16,
+    fontSize: RFValue(14),
     marginVertical: 10,
   },
   input: {
     borderWidth: 1,
     borderColor: "#c0c0c0",
     padding: 10,
-    borderRadius: 20,
+    borderRadius: 30,
     color: "#000",
+    fontSize: RFValue(10),
+    maxHeight: "20%",
   },
   placeholderText: {
     color: "#888",
@@ -757,10 +836,14 @@ const styles = StyleSheet.create({
 
   modalContent: {
     width: "60%",
+    maxHeight: "70%",
     backgroundColor: "#fff",
     borderRadius: 50,
     padding: 20,
     alignItems: "center",
+    elevation: 5,
+    alignSelf: "center",
+    textAlign: "center",
   },
   modalTitle: {
     fontSize: 18,

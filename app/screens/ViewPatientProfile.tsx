@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
   View,
-  Text,
+  Text as RNText,
   StyleSheet,
   Image,
   ActivityIndicator,
@@ -13,13 +13,15 @@ import {
 import { useRoute } from "@react-navigation/native";
 import axios from "axios";
 import Icon from "react-native-vector-icons/MaterialIcons";
-
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../../type"; // Adjust path as needed
-
 import { Ionicons } from "@expo/vector-icons";
 
+// Custom Text component to disable font scaling globally
+const Text = (props: any) => {
+  return <RNText {...props} allowFontScaling={false} />;
+};
 
 type ViewPatientProfileNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -27,7 +29,7 @@ type ViewPatientProfileNavigationProp = StackNavigationProp<
 >;
 
 const ViewPatientProfile: React.FC = () => {
-    const navigation = useNavigation<ViewPatientProfileNavigationProp>();
+  const navigation = useNavigation<ViewPatientProfileNavigationProp>();
   const route = useRoute();
   const { patientID } = route.params as { patientID: string };
 
@@ -98,17 +100,17 @@ const ViewPatientProfile: React.FC = () => {
   return (
     <View style={styles.mainContainer}>
       <View style={styles.backIconContainer}>
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={() => {
-                console.log("Back button clicked");
-                navigation.navigate("AdminDashboardPage");
-              }}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="arrow-back" size={18} color="#000" />
-            </TouchableOpacity>
-          </View>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => {
+            console.log("Back button clicked");
+            navigation.navigate("AdminDashboardPage");
+          }}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="arrow-back" size={18} color="#000" />
+        </TouchableOpacity>
+      </View>
       {/* Static Header */}
       <View style={styles.headerContainer}>
         {/* <Text style={styles.title}>General Details</Text> */}
@@ -427,7 +429,7 @@ const styles = StyleSheet.create({
     height: "75%", // Ensures the image fills the container height
     borderRadius: 30, // Apply border radius to the image itself
   },
-  
+
   profileContainer: {
     bottom: 35,
   },
@@ -479,8 +481,8 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
     paddingRight: 10,
     paddingLeft: 10,
-    bottom: 80,
-    marginBottom: 15,
+    marginTop: -70,
+    marginBottom: -45,
   },
   row: {
     flexDirection: "row",

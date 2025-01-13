@@ -1,6 +1,6 @@
 import {
   View,
-  Text,
+  Text as RNText,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
@@ -9,13 +9,17 @@ import {
   SafeAreaView,
   StatusBar,
 } from "react-native";
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import React, { useState, useCallback, useEffect } from "react"; 
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import React, { useState, useCallback, useEffect } from "react";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
-import { RootStackParamList } from "../../type"; 
+import { RootStackParamList } from "../../type";
 import texts from "../translation/texts";
+// Custom Text component to disable font scaling globally
+const Text = (props: any) => {
+  return <RNText {...props} allowFontScaling={false} />;
+};
 
 export default function Exercise() {
   const navigation =
@@ -23,15 +27,15 @@ export default function Exercise() {
 
   // State for toggling language
   const [isTranslatingToTamil, setIsTranslatingToTamil] = useState(false);
-  
+
   // Animation values for tiles
   const fadeAnim = new Animated.Value(0); // Initial opacity value
 
-// Define the back press handler function inside the component
-const handleBackPress = useCallback(() => {
-  console.log("Back button pressed"); // Add this to debug
-  navigation.navigate("DailyUploads");
-}, [navigation]);
+  // Define the back press handler function inside the component
+  const handleBackPress = useCallback(() => {
+    console.log("Back button pressed"); // Add this to debug
+    navigation.navigate("DailyUploads");
+  }, [navigation]);
 
   // Array of slide animations for the images
   const slideAnim = [
@@ -51,7 +55,7 @@ const handleBackPress = useCallback(() => {
 
   // Handle Translation
   const handleTranslate = useCallback(() => {
-    setIsTranslatingToTamil(prev => !prev);
+    setIsTranslatingToTamil((prev) => !prev);
     console.log("Translate button pressed");
   }, []);
 
@@ -75,192 +79,204 @@ const handleBackPress = useCallback(() => {
   }, [fadeAnim, slideAnim]);
 
   return (
-    <SafeAreaProvider> 
-<SafeAreaView style={styles.safeArea}>
-      {/* Adjust StatusBar visibility */}
-      <StatusBar 
-        barStyle="dark-content"        // Set the color of status bar text
-        backgroundColor="transparent"  // Make the background transparent
-        translucent={true}             // Make status bar translucent
-      />
+    <SafeAreaProvider>
+      <SafeAreaView style={styles.safeArea}>
+        {/* Adjust StatusBar visibility */}
+        <StatusBar
+          barStyle="dark-content" // Set the color of status bar text
+          backgroundColor="transparent" // Make the background transparent
+          translucent={true} // Make status bar translucent
+        />
 
-    <View style={styles.outerContainer}>
-    
-      <View style={styles.translateContainer}>
-        <TouchableOpacity
-          onPress={handleTranslate}
-          style={styles.translateButton}
-        >
-          <Icon
-            name={isTranslatingToTamil ? "language" : "translate"}
-            size={20}
-            color="#4169E1"
-          />
-          <Text style={styles.buttonTranslateText}>
-            {isTranslatingToTamil
-              ? "Translate to English"
-              : "தமிழில் படிக்க"}
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Title */}
-      <View style={styles.mainContainer}>
-      <TouchableOpacity
-            onPress={handleBackPress}
-            style={styles.backButton}
-            activeOpacity={0.7}
-          >
-            <Icon name="arrow-back" size={24} color="#020202" />
-          </TouchableOpacity>
-        <Text style={styles.greetingText}>{languageText.exerciseJournal}</Text>
-      </View>
-
-      <View style={styles.cardsContainer}>
-        <View style={styles.cardContainer}>
-          <TouchableOpacity
-            style={[styles.card, styles.card1]}
-            onPress={() => navigation.navigate("DailyExercise")}
-          >
-            <View style={[styles.cardBackground, styles.card1Background]}>
+        <View style={styles.outerContainer}>
+          <View style={styles.translateContainer}>
+            <TouchableOpacity
+              onPress={handleTranslate}
+              style={styles.translateButton}
+            >
               <Icon
-                name="fitness-center"
-                size={30}
-                color="#003366"
-                style={styles.cardIcon}
+                name={isTranslatingToTamil ? "language" : "translate"}
+                size={20}
+                color="#4169E1"
               />
-            </View>
-          </TouchableOpacity>
-          <Text style={styles.cardTitle}>{languageText.exercise}</Text>
-        </View>
-
-        <View style={styles.cardContainer}>
-          <TouchableOpacity
-            style={[styles.card, styles.card2]}
-            onPress={() => navigation.navigate("ExerciseVideos")}
-          >
-            <View style={[styles.cardBackground, styles.card2Background]}>
-              <Icon
-                name="video-library"
-                size={30}
-                color="#004d00"
-                style={styles.cardIcon}
-              />
-            </View>
-          </TouchableOpacity>
-          <Text style={styles.cardTitle}>{languageText.videos}</Text>
-        </View>
-
-        <View style={styles.cardContainer}>
-          <TouchableOpacity
-            style={[styles.card, styles.card3]}
-            onPress={() => navigation.navigate("BreathingExercise")}
-          >
-            <View style={[styles.cardBackground, styles.card3Background]}>
-              <Icon
-                name="timer"
-                size={30}
-                color="#cc6600"
-                style={styles.cardIcon}
-              />
-            </View>
-          </TouchableOpacity>
-          <Text style={styles.cardTitle}>{languageText.breathing}</Text>
-        </View>
-
-        <View style={styles.cardContainer}>
-          <TouchableOpacity
-            style={[styles.card, styles.card4]}
-            onPress={() => navigation.navigate("Walking")}
-          >
-            <View style={[styles.cardBackground, styles.card4Background]}>
-              <Icon
-                name="directions-walk"
-                size={30}
-                color="#004d40"
-                style={styles.cardIcon}
-              />
-            </View>
-          </TouchableOpacity>
-          <Text style={styles.cardTitle}>{languageText.walking}</Text>
-        </View>
-      </View>
-
-      <Text style={styles.subTitle}>{languageText.wellnessConsole}</Text>
-
-      {/* 4 Tiles with Different Heights */}
-      <View style={styles.puzzledTilesContainer}>
-        {/* Tile 1 */}
-        <Animated.View
-          style={[
-            styles.puzzledTileContainer,
-            { opacity: fadeAnim, transform: [{ translateY: slideAnim[0] }] },
-          ]}
-        >
-          <View style={styles.puzzledTile1}>
-            <Image
-              source={require("../../assets/images/tile1.jpg")}
-              style={styles.tile1Image}
-            />
+              <Text style={styles.buttonTranslateText}>
+                {isTranslatingToTamil
+                  ? "Translate to English"
+                  : "தமிழில் படிக்க"}
+              </Text>
+            </TouchableOpacity>
           </View>
-        </Animated.View>
 
-        {/* Tile 2 */}
-        <Animated.View
-          style={[
-            styles.puzzledTileContainer,
-            { opacity: fadeAnim, transform: [{ translateY: slideAnim[1] }] },
-          ]}
-        >
-          <View style={styles.puzzledTile2}>
-            <Image
-              source={require("../../assets/images/tile4.jpg")}
-              style={styles.tile2Image}
-            />
+          {/* Title */}
+          <View style={styles.mainContainer}>
+            <TouchableOpacity
+              onPress={handleBackPress}
+              style={styles.backButton}
+              activeOpacity={0.7}
+            >
+              <Icon name="arrow-back" size={24} color="#020202" />
+            </TouchableOpacity>
+            <Text style={styles.greetingText}>
+              {languageText.exerciseJournal}
+            </Text>
           </View>
-        </Animated.View>
 
-        {/* Tile 3 */}
-        <Animated.View
-          style={[
-            styles.puzzledTileContainer,
-            { opacity: fadeAnim, transform: [{ translateY: slideAnim[2] }] },
-          ]}
-        >
-          <View style={styles.puzzledTile3}>
-            <Image
-              source={require("../../assets/images/tile3.jpg")}
-              style={styles.tile3Image}
-            />
-          </View>
-        </Animated.View>
+          <View style={styles.cardsContainer}>
+            <View style={styles.cardContainer}>
+              <TouchableOpacity
+                style={[styles.card, styles.card1]}
+                onPress={() => navigation.navigate("DailyExercise")}
+              >
+                <View style={[styles.cardBackground, styles.card1Background]}>
+                  <Icon
+                    name="fitness-center"
+                    size={30}
+                    color="#003366"
+                    style={styles.cardIcon}
+                  />
+                </View>
+              </TouchableOpacity>
+              <Text style={styles.cardTitle}>{languageText.exercise}</Text>
+            </View>
 
-        {/* Tile 4 */}
-        <Animated.View
-          style={[
-            styles.puzzledTileContainer,
-            { opacity: fadeAnim, transform: [{ translateY: slideAnim[3] }] },
-          ]}
-        >
-          <View style={styles.puzzledTile4}>
-            <Image
-              source={require("../../assets/images/tile2.jpg")}
-              style={styles.tile4Image}
-            />
+            <View style={styles.cardContainer}>
+              <TouchableOpacity
+                style={[styles.card, styles.card2]}
+                onPress={() => navigation.navigate("ExerciseVideos")}
+              >
+                <View style={[styles.cardBackground, styles.card2Background]}>
+                  <Icon
+                    name="video-library"
+                    size={30}
+                    color="#004d00"
+                    style={styles.cardIcon}
+                  />
+                </View>
+              </TouchableOpacity>
+              <Text style={styles.cardTitle}>{languageText.videos}</Text>
+            </View>
+
+            <View style={styles.cardContainer}>
+              <TouchableOpacity
+                style={[styles.card, styles.card3]}
+                onPress={() => navigation.navigate("BreathingExercise")}
+              >
+                <View style={[styles.cardBackground, styles.card3Background]}>
+                  <Icon
+                    name="timer"
+                    size={30}
+                    color="#cc6600"
+                    style={styles.cardIcon}
+                  />
+                </View>
+              </TouchableOpacity>
+              <Text style={styles.cardTitle}>{languageText.breathing}</Text>
+            </View>
+
+            <View style={styles.cardContainer}>
+              <TouchableOpacity
+                style={[styles.card, styles.card4]}
+                onPress={() => navigation.navigate("Walking")}
+              >
+                <View style={[styles.cardBackground, styles.card4Background]}>
+                  <Icon
+                    name="directions-walk"
+                    size={30}
+                    color="#004d40"
+                    style={styles.cardIcon}
+                  />
+                </View>
+              </TouchableOpacity>
+              <Text style={styles.cardTitle}>{languageText.walking}</Text>
+            </View>
           </View>
-        </Animated.View>
-      </View>
-      
-      {/* Scrollable Content */}
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={styles.container}>
-          {/* Your scrollable content here */}
+
+          <Text style={styles.subTitle}>{languageText.wellnessConsole}</Text>
+
+          {/* 4 Tiles with Different Heights */}
+          <View style={styles.puzzledTilesContainer}>
+            {/* Tile 1 */}
+            <Animated.View
+              style={[
+                styles.puzzledTileContainer,
+                {
+                  opacity: fadeAnim,
+                  transform: [{ translateY: slideAnim[0] }],
+                },
+              ]}
+            >
+              <View style={styles.puzzledTile1}>
+                <Image
+                  source={require("../../assets/images/tile1.jpg")}
+                  style={styles.tile1Image}
+                />
+              </View>
+            </Animated.View>
+
+            {/* Tile 2 */}
+            <Animated.View
+              style={[
+                styles.puzzledTileContainer,
+                {
+                  opacity: fadeAnim,
+                  transform: [{ translateY: slideAnim[1] }],
+                },
+              ]}
+            >
+              <View style={styles.puzzledTile2}>
+                <Image
+                  source={require("../../assets/images/tile4.jpg")}
+                  style={styles.tile2Image}
+                />
+              </View>
+            </Animated.View>
+
+            {/* Tile 3 */}
+            <Animated.View
+              style={[
+                styles.puzzledTileContainer,
+                {
+                  opacity: fadeAnim,
+                  transform: [{ translateY: slideAnim[2] }],
+                },
+              ]}
+            >
+              <View style={styles.puzzledTile3}>
+                <Image
+                  source={require("../../assets/images/tile3.jpg")}
+                  style={styles.tile3Image}
+                />
+              </View>
+            </Animated.View>
+
+            {/* Tile 4 */}
+            <Animated.View
+              style={[
+                styles.puzzledTileContainer,
+                {
+                  opacity: fadeAnim,
+                  transform: [{ translateY: slideAnim[3] }],
+                },
+              ]}
+            >
+              <View style={styles.puzzledTile4}>
+                <Image
+                  source={require("../../assets/images/tile2.jpg")}
+                  style={styles.tile4Image}
+                />
+              </View>
+            </Animated.View>
+          </View>
+
+          {/* Scrollable Content */}
+          <ScrollView contentContainerStyle={styles.scrollContainer}>
+            <View style={styles.container}>
+              {/* Your scrollable content here */}
+            </View>
+          </ScrollView>
         </View>
-      </ScrollView>
-    </View>
-    </SafeAreaView>
-</SafeAreaProvider>
-
+      </SafeAreaView>
+    </SafeAreaProvider>
   );
 }
 const styles = StyleSheet.create({
@@ -273,7 +289,7 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
   },
 
   mainContainer: {
@@ -282,7 +298,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginTop: 10,
-    
   },
   backButton: {
     position: "absolute",
@@ -306,7 +321,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#000",
     marginVertical: 8,
-    
   },
   scrollContainer: {
     padding: 16,
@@ -458,6 +472,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginLeft: 5,
     color: "#4169E1",
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });

@@ -3,7 +3,8 @@ import {
   View,
   StyleSheet,
   TextInput,
-  Text,
+  Text as RNText,
+  TextProps,
   TouchableOpacity,
   Animated,
   KeyboardAvoidingView,
@@ -18,6 +19,14 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../../type"; // Adjust the path to your types file
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import texts from "../translation/texts";
+import CustomAlert from "../components/CustomAlert";
+
+// Custom Text component to disable font scaling globally
+const Text = (props: TextProps) => {
+  return <RNText {...props} allowFontScaling={false} />;
+};
+
+
 
 type LoginPageNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -35,6 +44,10 @@ const LoginPage: React.FC = () => {
   const otpRefs = useRef<Array<TextInput | null>>([]);
   const languageText = isTranslatingToTamil ? texts.english : texts.tamil;
   const scale = useRef(new Animated.Value(1)).current;
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState('');
+  const [alertMessage, setAlertMessage] = useState('');
+
 
   useEffect(() => {
     const animate = () => {
@@ -73,14 +86,17 @@ const LoginPage: React.FC = () => {
     return () => clearInterval(timerInterval);
   }, [otpSent, resendEnabled]);
 
-  const handleSendOtp = async () => {
+  /* const handleSendOtp = async () => {
     if (phoneNumber.length !== 10) {
-      /* Alert.alert("Error", "Phone number must be exactly 10 digits."); */
-      Alert.alert(languageText.phoneNumberError);
-
+      setAlertTitle("Error");
+      setAlertMessage(languageText.phoneNumberError);
+      setAlertVisible(true);
+      setTimeout(() => {
+        setAlertVisible(false);
+      }, 5000); // 5 seconds delay for closing the alert
       return;
     }
-
+  
     try {
       const response = await fetch("https://indheart.pinesphere.in/api/send_otp/", {
         method: "POST",
@@ -91,53 +107,131 @@ const LoginPage: React.FC = () => {
           phone_number: phoneNumber,
         }).toString(),
       });
-
+  
       const data = await response.json();
-
+  
       if (data.status === "success") {
         setOtpSent(true);
         setResendEnabled(false);
-        setTimer(60);
-        /* Alert.alert("Success", "OTP sent successfully"); */
-        Alert.alert(languageText.otpSentSuccessfully);
+        setTimer(100);
+        setAlertTitle("Success");
+        setAlertMessage(languageText.otpSentSuccessfully);
+        setAlertVisible(true);
+        // Close alert after 5 seconds
+        setTimeout(() => {
+          setAlertVisible(false);
+        }, 5000); // 5 seconds delay for closing the alert
       } else {
         if (data.message === "Phone number already verified. Please login.") {
           if (data.user_type === "Admin") {
-            /* Alert.alert("Info", "Phone number already verified. Automatically logging you in."); */
-            Alert.alert(
-              languageText.info, // Add this in texts.js for the "Info" title
-              languageText.phoneAlreadyVerifiedAdmin // Add this in texts.js for the message
-            );
+            setAlertTitle(languageText.info);
+            setAlertMessage(languageText.phoneAlreadyVerifiedAdmin);
+            setAlertVisible(true);
+            setTimeout(() => {
+              setAlertVisible(false);
+            }, 5000); // 5 seconds delay for closing the alert
             navigation.navigate("AdminDashboardPage");
           } else if (data.user_type === "Patient") {
             await AsyncStorage.setItem("phoneNumber", phoneNumber);
-
-            /* Alert.alert("Info", "Phone number already verified. Automatically logging you in."); */
-            Alert.alert(
-              languageText.info, // Add this in texts.js for the "Info" title
-              languageText.phoneAlreadyVerifiedPatient // Add this in texts.js for the message
-            );
+            setAlertTitle(languageText.info);
+            setAlertMessage(languageText.phoneAlreadyVerifiedPatient);
+            setAlertVisible(true);
+            setTimeout(() => {
+              setAlertVisible(false);
+            }, 5000); // 5 seconds delay for closing the alert
             navigation.navigate("PatientDashboardPage");
           } else {
-            /* Alert.alert("Error", "Unexpected user type"); */
-            Alert.alert(
-              languageText.error, // Add this in texts.js for the "Error" title
-              languageText.unexpectedUserType // Add this in texts.js for the message
-            );
+            setAlertTitle(languageText.error);
+            setAlertMessage(languageText.unexpectedUserType);
+            setAlertVisible(true);
+            setTimeout(() => {
+              setAlertVisible(false);
+            }, 5000); // 5 seconds delay for closing the alert
           }
         } else {
-          /* Alert.alert("Error", data.message); */
-          Alert.alert(
-            languageText.error, // Add this in texts.js for the "Error" title
-            data.message // or use languageText[data.message] if you want to have this dynamic as well
-          );
+          setAlertTitle(languageText.error);
+          setAlertMessage(data.message);
+          setAlertVisible(true);
+          setTimeout(() => {
+            setAlertVisible(false);
+          }, 5000); // 5 seconds delay for closing the alert
         }
       }
     } catch (error) {
       console.error("Error in handleSendOtp:", error);
-      Alert.alert("Error", "Failed to send OTP. Please try again later.");
+      setAlertTitle("Error");
+      setAlertMessage("Failed to send OTP. Please try again later.");
+      setAlertVisible(true);
+      setTimeout(() => {
+        setAlertVisible(false);
+      }, 5000); // 5 seconds delay for closing the alert
+    }
+  }; */
+  
+  const handleSendOtp = async () => {
+    if (phoneNumber.length !== 10) {
+      setAlertTitle("Error");
+      setAlertMessage(languageText.phoneNumberError);
+      setAlertVisible(true);
+      return;
+    }
+  
+    try {
+      const response = await fetch("https://indheart.pinesphere.in/api/send_otp/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
+          phone_number: phoneNumber,
+        }).toString(),
+      });
+  
+      const data = await response.json();
+  
+      if (data.status === "success") {
+        setOtpSent(true);
+        setResendEnabled(false);
+        setTimer(100);
+        setAlertTitle("Success");
+        setAlertMessage(languageText.otpSentSuccessfully);
+        setAlertVisible(true);
+      } else {
+        if (data.message === "Phone number already verified. Please login.") {
+          if (data.user_type === "Admin") {
+            setAlertTitle(languageText.info);
+            setAlertMessage(languageText.phoneAlreadyVerifiedAdmin);
+            setAlertVisible(true);
+            navigation.navigate("AdminDashboardPage");
+          } else if (data.user_type === "Patient") {
+            await AsyncStorage.setItem("phoneNumber", phoneNumber);
+            setAlertTitle(languageText.info);
+            setAlertMessage(languageText.phoneAlreadyVerifiedPatient);
+            setAlertVisible(true);
+            navigation.navigate("PatientDashboardPage");
+          } else {
+            setAlertTitle(languageText.error);
+            setAlertMessage(languageText.unexpectedUserType);
+            setAlertVisible(true);
+          }
+        } else {
+          setAlertTitle(languageText.error);
+          setAlertMessage(data.message);
+          setAlertVisible(true);
+        }
+      }
+    } catch (error) {
+      console.error("Error in handleSendOtp:", error);
+      setAlertTitle("Error");
+      setAlertMessage("Failed to send OTP. Please try again later.");
+      setAlertVisible(true);
     }
   };
+  
+  
+  
+
+  
 
   // Handle Translation
   const handleTranslate = useCallback(() => {
@@ -169,17 +263,23 @@ const LoginPage: React.FC = () => {
 
         resetState();
       } else {
-        Alert.alert("Error", data.message);
+  //Alert.alert("Error", data.message);
+  setAlertTitle("Error");
+  setAlertMessage(data.message);
       }
     } catch (error) {
       console.error("Error in handleVerifyOtp:", error);
-      Alert.alert("Error", "Failed to verify OTP");
+      //Alert.alert("Error", "Failed to verify OTP");
+      setAlertTitle("Error");
+      setAlertMessage("Failed to verify OTP");
     }
   };
 
   const handleResendOtp = async () => {
     if (phoneNumber.length !== 10) {
-      Alert.alert("Error", "Phone number must be exactly 10 digits.");
+      //Alert.alert("Error", "Phone number must be exactly 10 digits.");
+      setAlertTitle("Error");
+      setAlertMessage("Phone number must be exactly 10 digits.");
       return;
     }
     console.log("handleResendOtp called");
@@ -200,13 +300,19 @@ const LoginPage: React.FC = () => {
         setTimer(60); // Reset timer
         setResendEnabled(false); // Reset resend button
         setOtp(""); // Clear the entered OTP
-        Alert.alert("Success", "OTP resent successfully");
+        //Alert.alert("Success", "OTP resent successfully");
+        setAlertTitle("Success");
+        setAlertMessage("OTP resent successfully");
       } else {
-        Alert.alert("Error", data.message);
+        //Alert.alert("Error", data.message);
+        setAlertTitle("Error");
+        setAlertMessage(data.message);
       }
     } catch (error) {
       console.error("Error in handleResendOtp:", error);
-      Alert.alert("Error", "Failed to resend OTP");
+      //Alert.alert("Error", "Failed to resend OTP");
+      setAlertTitle("Error");
+      setAlertMessage("Failed to resend OTP");
     }
   };
 
@@ -260,6 +366,12 @@ const LoginPage: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <CustomAlert
+      visible={alertVisible}
+      title={alertTitle}
+      message={alertMessage}
+      onClose={() => setAlertVisible(false)}
+    />
       {/* Adjust StatusBar visibility */}
       <StatusBar
         barStyle="dark-content" // Set the color of status bar text
@@ -320,6 +432,7 @@ const LoginPage: React.FC = () => {
                     numberOfLines={2} // Optional: Specify number of lines
                     keyboardType="number-pad"
                     multiline={true}
+                    allowFontScaling={false} // Disable font scaling
                   />
 
                   <TouchableOpacity
@@ -415,6 +528,9 @@ const styles = StyleSheet.create({
     marginTop: 50,
     paddingHorizontal: 10, // Add padding to prevent content from touching screen edges
   },
+  alertText: {
+    fontSize: 16, // Adjust the font size as needed
+  },
   safeArea: {
     flex: 1,
     backgroundColor: "#fff",
@@ -485,7 +601,11 @@ const styles = StyleSheet.create({
     marginBottom: 10, // Reduced margin
     width: "100%", // Changed width to full to prevent shifting
     marginTop: 20,
-    paddingHorizontal: 10, // Add padding to prevent content from touching screen edges
+    paddingHorizontal: 10,
+    alignItems: "center", 
+    alignSelf: "center",
+    textAlign: "center",
+    alignContent: "center",
   },
   phoneInputWrapper: {
     flexDirection: "row", // Arrange items horizontally

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
-  Text,
+  Text as RNText,
   View,
   StyleSheet,
   Image,
@@ -26,6 +26,10 @@ import { RootStackParamList } from "../../type";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import texts from "../translation/texts";
+
+// Custom Text component to disable font scaling globally 
+const Text = (props: any) => { return <RNText {...props} allowFontScaling={false} />; };
+
 
 type SleepRitualsPageNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -358,7 +362,7 @@ useFocusEffect(
             style={styles.datePickerField}
           >
             <Text style={styles.datePickerText}>
-              {selectedDate ? selectedDate.toDateString() : "Select Date"}
+              {selectedDate ? selectedDate.toDateString() :  languageText.selectDate}
             </Text>
           </TouchableOpacity>
         </View>

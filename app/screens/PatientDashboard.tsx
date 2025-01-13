@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import {
   View,
-  Text,
+  Text as RNText,
+  TextProps,
   StyleSheet,
   ScrollView,
   SafeAreaView,
@@ -22,6 +23,11 @@ import Icon from "react-native-vector-icons/MaterialIcons";
 import texts from "../translation/texts";
 import HealthActivityPopup from "../components/HealthActivityPopup";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+
+// Custom Text component to disable font scaling globally
+const Text = (props: TextProps) => {
+  return <RNText {...props} allowFontScaling={false} />;
+};
 
 
 Icon.loadFont();

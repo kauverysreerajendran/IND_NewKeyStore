@@ -4,7 +4,7 @@ import {
   StyleSheet,
   Image,
   ScrollView,
-  Text,
+  Text as RNText,
   SafeAreaView,
   StatusBar,
   TouchableOpacity,
@@ -16,6 +16,10 @@ import { RootStackParamList } from "../../type";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { useCallback, useState } from "react";
 import texts from "../translation/texts";
+// Custom Text component to disable font scaling globally
+const Text = (props: any) => {
+  return <RNText {...props} allowFontScaling={false} />;
+};
 
 const MyFoodPlate = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
@@ -88,35 +92,36 @@ const MyFoodPlate = () => {
         />
 
         <View style={styles.container}>
-         
           <View style={styles.header}>
-  {/* Back Button */}
-  <TouchableOpacity
-    onPress={handleBackPress}
-    style={styles.backButton}
-    activeOpacity={0.7}
-  >
-    <Icon name="arrow-back" size={24} color="#020202" />
-  </TouchableOpacity>
+            {/* Back Button */}
+            <TouchableOpacity
+              onPress={handleBackPress}
+              style={styles.backButton}
+              activeOpacity={0.7}
+            >
+              <Icon name="arrow-back" size={24} color="#020202" />
+            </TouchableOpacity>
 
-  {/* Title */}
-  <Text style={styles.title}>{languageText.myfoodPlateTitle}</Text>
+            {/* Title */}
+            <Text style={styles.title}>{languageText.myfoodPlateTitle}</Text>
 
-  {/* Translate Button */}
-  <TouchableOpacity
-    onPress={handleTranslate}
-    style={styles.translateButton}
-  >
-    <Icon
-      name={isTranslatingToTamil ? "language" : "translate"}
-      size={20}
-      color="#4169E1"
-    />
-    <Text style={styles.translateButtonText}>
-      {isTranslatingToTamil ? "Translate to English" : "தமிழில் படிக்க"}
-    </Text>
-  </TouchableOpacity>
-</View>
+            {/* Translate Button */}
+            <TouchableOpacity
+              onPress={handleTranslate}
+              style={styles.translateButton}
+            >
+              <Icon
+                name={isTranslatingToTamil ? "language" : "translate"}
+                size={20}
+                color="#4169E1"
+              />
+              <Text style={styles.translateButtonText}>
+                {isTranslatingToTamil
+                  ? "Translate to English"
+                  : "தமிழில் படிக்க"}
+              </Text>
+            </TouchableOpacity>
+          </View>
 
           <Image
             source={require("../../assets/images/myfoodplate.png")} // Replace with your main image filename
@@ -216,7 +221,7 @@ const styles = StyleSheet.create({
     elevation: 5, // For Android shadow
     alignSelf: "center",
   },
-  
+
   whiteContainer: {
     flex: 1,
     backgroundColor: "#fff",

@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import {
   View,
-  Text,
+  Text as RNText,
   StyleSheet,
   TextInput,
   Alert,
@@ -15,13 +15,18 @@ import {
   KeyboardAvoidingView,
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-
+import { RFValue } from "react-native-responsive-fontsize"; // If you choose to use responsive font size library
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../../type";
 import Icon from "react-native-vector-icons/MaterialIcons"; // Import the icon library
 import { saveOrUpdateMetabolic } from "../services/apiService";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import CustomAlert from "../components/CustomAlert";
+// Custom Text component to disable font scaling globally
+const Text = (props: any) => {
+  return <RNText {...props} allowFontScaling={false} />;
+};
 
 type AddMetabolicProfileNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -74,6 +79,15 @@ const AddMetabolicProfilePage: React.FC = () => {
   );
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState("");
+  const [alertMessage, setAlertMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [cancelAlertVisible, setCancelAlertVisible] = useState(false);
+  const [regularAlertVisible, setRegularAlertVisible] = useState(false);
+  const [successAlertVisible, setSuccessAlertVisible] = useState(false);
+  const [errorAlertVisible, setErrorAlertVisible] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const navigation = useNavigation<AddMetabolicProfileNavigationProp>();
 
@@ -94,7 +108,9 @@ const AddMetabolicProfilePage: React.FC = () => {
           setPatientID(options[options.length - 1].value);
         }
       } catch (error) {
-        Alert.alert("Error", "Failed to fetch patient IDs.");
+        //Alert.alert("Error", "Failed to fetch patient IDs.");
+        setAlertTitle("Error");
+        setAlertMessage("Failed to fetch patient IDs.");
       }
     };
 
@@ -133,7 +149,9 @@ const AddMetabolicProfilePage: React.FC = () => {
           handleClear();
         }
       } catch (error) {
-        Alert.alert("Error", "Failed to fetch metabolic data.");
+        //Alert.alert("Error", "Failed to fetch metabolic data.");
+        setAlertTitle("Error");
+        setAlertMessage("Failed to fetch metabolic data.");
         console.error("Error fetching metabolic data:", error); // Log the error
       }
     };
@@ -160,10 +178,12 @@ const AddMetabolicProfilePage: React.FC = () => {
       !totalCholesterol ||
       !walkTest
     ) {
-      Alert.alert(
+      /* Alert.alert(
         "Validation Error",
         "Please fill in all required fields before saving."
-      );
+      ); */
+      setAlertTitle("Validation Error");
+      setAlertMessage("Please fill in all required fields before saving.");
       return;
     }
 
@@ -186,18 +206,13 @@ const AddMetabolicProfilePage: React.FC = () => {
 
     try {
       await saveOrUpdateMetabolic(newMetabolicData);
-      Alert.alert(
-        "Form Submitted",
-        "Metabolic Information has been saved successfully!",
-        [{ text: "OK" }]
-      );
+      setSuccessAlertVisible(true);
       handleClear(); // Clear the form after successful submission
-      navigation.navigate("ViewPatientTablePage"); // Navigate to the desired page
     } catch (error: any) {
-      Alert.alert(
-        "Error",
+      setErrorMessage(
         error.message || "An error occurred while saving the data."
       );
+      setErrorAlertVisible(true);
     }
   };
 
@@ -234,7 +249,7 @@ const AddMetabolicProfilePage: React.FC = () => {
     setWalkTest("");
   };
 
-  const handleCancel = () => {
+  /* const handleCancel = () => {
     Alert.alert("Cancel", "Are you sure you want to cancel?", [
       {
         text: "No",
@@ -248,8 +263,11 @@ const AddMetabolicProfilePage: React.FC = () => {
         },
       },
     ]);
-  };
+  }; */
 
+  const handleCancel = () => {
+    setCancelAlertVisible(true);
+  };
   const openPickerModal = (
     options: PickerOption[],
     label: string,
@@ -448,6 +466,38 @@ const AddMetabolicProfilePage: React.FC = () => {
 
   return (
     <View style={styles.container}>
+      <CustomAlert
+        title="Form Submitted"
+        message="Metabolic Information has been saved successfully!"
+        visible={successAlertVisible}
+        onClose={() => setSuccessAlertVisible(false)}
+        mode="ok"
+        onOk={() => {
+          setSuccessAlertVisible(false);
+          navigation.navigate("ViewPatientTablePage");
+        }}
+      />
+
+      <CustomAlert
+        title="Error"
+        message={errorMessage}
+        visible={errorAlertVisible}
+        onClose={() => setErrorAlertVisible(false)}
+        mode="ok"
+      />
+
+      <CustomAlert
+        title="Cancel"
+        message="Are you sure you want to cancel?"
+        visible={cancelAlertVisible}
+        onClose={() => setCancelAlertVisible(false)}
+        mode="confirm"
+        onYes={() => {
+          handleClear();
+          navigation.navigate("AdminDashboardPage");
+        }}
+        onNo={() => setCancelAlertVisible(false)}
+      />
       <TouchableOpacity
         style={styles.backButtonContainer}
         onPress={() => navigation.goBack()}
@@ -643,7 +693,7 @@ const styles = StyleSheet.create({
   },
 
   label: {
-    fontSize: 16,
+    fontSize: RFValue(14),
     fontWeight: "500",
     flex: 1, // Takes up space on the left
   },
@@ -654,7 +704,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 15,
     paddingHorizontal: 10,
-    fontSize: 14,
+    fontSize: RFValue(10),
     flex: 2, // Takes up space on the right
     marginTop: 10,
   },

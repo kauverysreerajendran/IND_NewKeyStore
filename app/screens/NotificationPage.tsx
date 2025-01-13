@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import {
   View,
-  Text,
+  Text as RNText,
   StyleSheet,
   FlatList,
   SafeAreaView,
@@ -12,6 +12,10 @@ import { useNavigation, NavigationProp } from "@react-navigation/native";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { RootStackParamList } from "../../type";
+
+// Custom Text component to disable font scaling globally 
+const Text = (props: any) => { return <RNText {...props} allowFontScaling={false} />; };
+
 
 // Define the notification item type
 type NotificationItem = {

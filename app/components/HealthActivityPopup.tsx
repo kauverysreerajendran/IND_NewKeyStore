@@ -1,6 +1,11 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Modal, StyleSheet, ImageBackground } from 'react-native';
+import { View, Text as RNText, TouchableOpacity, Modal, StyleSheet, ImageBackground } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
+
+// Custom Text component to disable font scaling globally 
+const Text = (props: any) => { return <RNText {...props} allowFontScaling={false} />; };
+
+
 
 interface HealthActivityPopupProps {
   visible: boolean;

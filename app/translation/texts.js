@@ -1,4 +1,5 @@
 // texts.js
+
 const texts = {
   english: {
     welcome: "Welcome to",
@@ -30,7 +31,6 @@ const texts = {
     goalSteps: "500 steps",
     upload: "Upload Daily Routines", // Add Upload Daily Routines in English
     healthBetterment: "For Health Betterment", // Add For Health Betterment in English
-    upload: "Upload Daily Activities",
     lifestyle: "Lifestyle", // Full English text
     insights: "Insights", // Full English text
     activities: "Activities", // Full English text
@@ -70,7 +70,6 @@ const texts = {
     yes: "Yes",
     no: "No",
     nutritiousSprouts: "Nutritious Sprouts",
-    wholesomeChoices: "Wholesome Choices",
     crispFreshSalads: "Crisp Fresh Salads",
     vitalGreens: "Vital Greens",
     guava: "Guava",
@@ -92,7 +91,6 @@ const texts = {
     otherEatablesPlaceholder: "Enter Name for Other Eatables",
     quantityPlaceholder: "Qty",
     fruitNamePlaceholder: "Enter fruit name",
-    otherEatablesPlaceholder: "Enter Name for Other Eatables",
     successMessage: "Your vegetarian diet has been saved successfully!",
     entryExists: "The dietary entry for this date has already been saved.",
     dateRequired: "Date is required.",
@@ -102,7 +100,6 @@ const texts = {
     unexpectedError: "An unexpected error occurred. Please try again.",
     error: "Error",
     wholesomeChoices: "Wholesome Choices",
-    vitalGreens: "Vital Greens",
     fruitsPicker: "Fruits Picker",
     nutrientIntakeJournal: "Nutrient Intake Journal",
     milkProducts: "Milk Products",
@@ -117,7 +114,6 @@ const texts = {
     instructionText:
       "Click on the above water drops to fill in your Water-Intake!",
     intakeText: `Intake`, // Use template literals
-    goalText: "Goal - ",
     congratulations: "Congratulations!",
     dailyGoal: "You have reached your daily goal!",
     recorded: "You have recorded",
@@ -412,9 +408,11 @@ const texts = {
     startDate: "Start Date",
     endDate: "End Date",
     viewMetricsTitle: "View Metrics",
+    selectDate: "Select Date",
   },
 
   tamil: {
+    selectDate: "தேதியைத் தேர்ந்தெடுக்கவும்",
     viewMetricsTitle: "செயல்பாடு விவரங்கள்",
     startDate: "தொடக்க தேதி",
     warmupexerciseTitle: "தமிழில் காணொளி",
@@ -721,7 +719,7 @@ const texts = {
     otherEatablesPlaceholder: "மற்ற உணவுகளுக்கான பெயரை உள்ளிடவும்",
     quantityPlaceholder: "அளவு",
     fruitNamePlaceholder: "பழத்தின் பெயரை உள்ளிடவும்",
-    otherEatablesPlaceholder: "மற்ற உணவுகள் உள்ளிடவும் ",
+    //otherEatablesPlaceholder: "மற்ற உணவுகள் உள்ளிடவும் ",
     successMessage: "உங்கள் சைவ உணவு வெற்றிகரமாக சேமிக்கப்பட்டுள்ளது",
     entryExists: "இந்த தேதிக்கு உணவுப் பதிவுகள் ஏற்கனவே சேமிக்கப்பட்டுள்ளது.",
     dateRequired: "தேதி உள்ளிடவும்",
@@ -743,7 +741,6 @@ const texts = {
     instructionText:
       "மேலே உள்ள நீர்த்துளிகளை கிளிக் செய்து, நீர் உட்கொள்வதை நிரப்பவும்!",
     intakeText: `உள்ளீடு`,
-    goalText: "இலக்கு ",
     congratulations: "வாழ்த்துகள்!",
     dailyGoal: "நீங்கள் உங்கள் தினசரி இலக்கை அடைந்துவிட்டீர்கள்!",
     recorded: "பதிவு செய்யப்பட்டது",

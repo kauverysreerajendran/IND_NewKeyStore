@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
   View,
-  Text,
+  Text as RNText,
   StyleSheet,
   ImageBackground,
   TouchableOpacity,
@@ -11,7 +11,6 @@ import {
   StatusBar,
   BackHandler,
   Alert,
-
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { Audio } from "expo-av"; // Import Audio from expo-av
@@ -19,6 +18,12 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../../type";
+import { RFValue } from "react-native-responsive-fontsize"; // If you choose to use responsive font size library
+import CustomAlert from "../components/CustomAlert";
+// Custom Text component to disable font scaling globally
+const Text = (props: any) => {
+  return <RNText {...props} allowFontScaling={false} />;
+};
 
 const INHALE_DURATION = 5000; // 10 seconds
 const EXHALE_DURATION = 10000; // 20 seconds
@@ -40,6 +45,7 @@ const BreathingExercise = () => {
   const [countdown, setCountdown] = useState(3); // New state for countdown
   const [countdownActive, setCountdownActive] = useState(true); // State to track countdown activity
   const [showElements, setShowElements] = useState(false); // State to control visibility of elements
+  const [cancelAlertVisible, setCancelAlertVisible] = useState(false);
 
   const loadSound = async () => {
     try {
@@ -86,10 +92,10 @@ const BreathingExercise = () => {
     navigation.navigate("Exercise");
   };
 
-       useFocusEffect(
-      React.useCallback(() => {
-        const backAction = () => {
-          Alert.alert("Cancel", "Are you sure you want to cancel?", [
+  useFocusEffect(
+    React.useCallback(() => {
+      const backAction = () => {
+        /* Alert.alert("Cancel", "Are you sure you want to cancel?", [
             {
               text: "No",
               onPress: () => null,
@@ -99,18 +105,19 @@ const BreathingExercise = () => {
               text: "Yes",
               onPress: () => navigation.navigate("PatientDashboardPage"),
             },
-          ]);
-          return true;
-        };
-    
-        const backHandler = BackHandler.addEventListener(
-          "hardwareBackPress",
-          backAction
-        );
-    
-        return () => backHandler.remove();
-      }, [navigation])
-    );
+          ]); */
+        setCancelAlertVisible(true);
+        return true;
+      };
+
+      const backHandler = BackHandler.addEventListener(
+        "hardwareBackPress",
+        backAction
+      );
+
+      return () => backHandler.remove();
+    }, [navigation])
+  );
 
   useEffect(() => {
     loadSound(); // Load sound on component mount
@@ -240,6 +247,17 @@ const BreathingExercise = () => {
 
   return (
     <SafeAreaProvider>
+      <CustomAlert
+        title="Cancel"
+        message="Are you sure you want to cancel?"
+        visible={cancelAlertVisible}
+        onClose={() => setCancelAlertVisible(false)}
+        mode="confirm"
+        onYes={() => {
+          navigation.navigate("PatientDashboardPage");
+        }}
+        onNo={() => setCancelAlertVisible(false)}
+      />
       <SafeAreaView style={styles.safeArea}>
         {/* Adjust StatusBar visibility */}
         <StatusBar
