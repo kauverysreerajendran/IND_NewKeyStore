@@ -18,6 +18,7 @@ import axios from "axios";
 import { Button } from "react-native";
 import * as FileSystem from "expo-file-system";
 import * as Sharing from "expo-sharing";
+import CustomAlert from "../components/CustomAlert";
 
 // Custom Text component to disable font scaling globally 
 const Text = (props: any) => { return <RNText {...props} allowFontScaling={false} />; };
@@ -53,6 +54,10 @@ const PatientDailyLogScreen = () => {
   const [lifestyleData, setlifestyleData] = useState<Record<string, boolean>>(
     {}
   );
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState('');
+  const [alertMessage, setAlertMessage] = useState('');
+
 
   // Fetch all data functions here
   const fetchDataForAllPatients = async () => {
@@ -136,7 +141,9 @@ const PatientDailyLogScreen = () => {
 
           // Share the file
           await Sharing.shareAsync(fileUri);
-          Alert.alert("Download Successful", "Excel file has been downloaded.");
+          //("Download Successful", "Excel file has been downloaded.");
+          setAlertTitle("Download Successful");
+          setAlertMessage("Excel file has been downloaded.");
         } else {
           throw new Error("FileReader result is null or not a string");
         }
@@ -151,7 +158,9 @@ const PatientDailyLogScreen = () => {
       reader.readAsDataURL(blob);
     } catch (error) {
       console.error("Failed to download Excel file:", error);
-      Alert.alert("Error", "Failed to download Excel file.");
+      //Alert.alert("Error", "Failed to download Excel file.");
+      setAlertTitle("Error");
+      setAlertMessage("Failed to download Excel file.");
     }
   };
 

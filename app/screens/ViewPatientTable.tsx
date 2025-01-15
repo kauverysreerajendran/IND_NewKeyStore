@@ -20,6 +20,8 @@ import Icon from "react-native-vector-icons/FontAwesome";
 import * as FileSystem from "expo-file-system";
 import * as Sharing from "expo-sharing";
 import { Buffer } from "buffer"; // Import buffer from npm
+import CustomAlert from "../components/CustomAlert";
+
 // Custom Text component to disable font scaling globally
 const Text = (props: any) => {
   return <RNText {...props} allowFontScaling={false} />;
@@ -43,6 +45,11 @@ const ViewPatientTablePage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const navigation = useNavigation<ViewPatientTablePageNavigationProp>();
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState("");
+  const [alertMessage, setAlertMessage] = useState("");
+  const [deleteAlertVisible, setDeleteAlertVisible] = useState(false);
+  const [deletePatientID, setDeletePatientID] = useState<string | null>(null); // Store patientID for deletion
 
   const jumpAnimation = useRef(new Animated.Value(0)).current;
   const [menuVisible, setMenuVisible] = useState(false);
@@ -133,14 +140,18 @@ const ViewPatientTablePage: React.FC = () => {
       // Share or open the file
       await Sharing.shareAsync(fileUri);
 
-      Alert.alert("Download Successful", "Excel file has been downloaded.");
+      //Alert.alert("Download Successful", "Excel file has been downloaded.");
+      setAlertTitle("Download Successful");
+      setAlertMessage("Excel file has been downloaded.");
     } catch (error) {
       console.error("Failed to download Excel file:", error);
-      Alert.alert("Error", "Failed to download Excel file.");
+      //Alert.alert("Error", "Failed to download Excel file.");
+      setAlertTitle("Error");
+      setAlertMessage("Failed to download Excel file.");
     }
   };
 
-  const handleDelete = (patientID: string) => {
+  /* const handleDelete = (patientID: string) => {
     Alert.alert(
       "Confirm Deletion",
       "Are you sure you want to delete this profile?",
@@ -169,8 +180,12 @@ const ViewPatientTablePage: React.FC = () => {
         },
       ]
     );
+  }; */
+  const handleDelete = (patientID: string) => {
+    // Trigger the custom alert instead of the default Alert
+    setDeletePatientID(patientID); // Store patientID for deletion
+    setDeleteAlertVisible(true); // Show the custom alert
   };
-
   if (loading) {
     return <Text style={styles.loadingText}>Loading...</Text>;
   }
@@ -181,6 +196,34 @@ const ViewPatientTablePage: React.FC = () => {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      <CustomAlert
+        title="Confirm Deletion"
+        message="Are you sure you want to delete this profile?"
+        visible={deleteAlertVisible}
+        onClose={() => setDeleteAlertVisible(false)} // Close the alert on close
+        mode="confirm"
+        onYes={async () => {
+          try {
+            if (deletePatientID) {
+              await axios.delete(
+                `https://indheart.pinesphere.in/api/api/patients/${deletePatientID}/`
+              ); // Adjust the URL to your API endpoint
+              setPatientProfiles((prevProfiles) =>
+                prevProfiles.filter(
+                  (profile) => profile.patient_id !== deletePatientID
+                )
+              );
+            }
+          } catch (error) {
+            console.error("Failed to delete patient profile:", error);
+            setAlertTitle("Error");
+            setAlertMessage("Failed to delete patient profile");
+          } finally {
+            setDeleteAlertVisible(false); // Close the alert after handling the response
+          }
+        }}
+        onNo={() => setDeleteAlertVisible(false)} // Close the alert on "No"
+      />
       <TouchableOpacity
         style={styles.backButtonContainer}
         onPress={() => navigation.navigate("AdminDashboardPage")} // Navigate to AdminDashboard
@@ -264,7 +307,6 @@ const styles = StyleSheet.create({
     padding: 10,
     backgroundColor: "#ffffff",
     paddingTop: 60,
-    
   },
 
   topLeftImageContainer: {

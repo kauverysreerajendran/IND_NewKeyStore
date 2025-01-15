@@ -12,7 +12,7 @@ import {
   Dimensions,
   Platform,
   Alert,
-  BackHandler
+  BackHandler,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -25,11 +25,12 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import texts from "../translation/texts";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
+import CustomAlert from "../components/CustomAlert";
 
-// Custom Text component to disable font scaling globally 
-const Text = (props: any) => { return <RNText {...props} allowFontScaling={false} />; };
-
-
+// Custom Text component to disable font scaling globally
+const Text = (props: any) => {
+  return <RNText {...props} allowFontScaling={false} />;
+};
 
 interface PatientDetails {
   patient_id: string; // Keep the patient_id string if you need it for other purposes
@@ -55,6 +56,13 @@ const VegDietPage: React.FC = () => {
     null
   );
   const [isTranslatingToTamil, setIsTranslatingToTamil] = useState(false);
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState("");
+  const [alertMessage, setAlertMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [cancelAlertVisible, setCancelAlertVisible] = useState(false);
+  const [regularAlertVisible, setRegularAlertVisible] = useState(false);
+  const [alertMode, setAlertMode] = useState("info"); // Info, success, or error
 
   // Toggle between Tamil and English based on the button click
   const languageText = isTranslatingToTamil ? texts.tamil : texts.english;
@@ -84,11 +92,11 @@ const VegDietPage: React.FC = () => {
     { title: nutrientTitles.crispFreshSalads, hasQuantity: true },
     { title: nutrientTitles.vitalGreens, hasQuantity: false },
   ];
-//Device back button handling
-useFocusEffect(
-  React.useCallback(() => {
-    const backAction = () => {
-      Alert.alert("Cancel", "Are you sure you want to cancel?", [
+  //Device back button handling
+  useFocusEffect(
+    React.useCallback(() => {
+      const backAction = () => {
+        /* Alert.alert("Cancel", "Are you sure you want to cancel?", [
         {
           text: "No",
           onPress: () => null,
@@ -98,19 +106,19 @@ useFocusEffect(
           text: "Yes",
           onPress: () => navigation.navigate("PatientDashboardPage"),
         },
-      ]);
-      return true;
-    };
+      ]); */
+        setCancelAlertVisible(true);
+        return true;
+      };
 
-    const backHandler = BackHandler.addEventListener(
-      "hardwareBackPress",
-      backAction
-    );
+      const backHandler = BackHandler.addEventListener(
+        "hardwareBackPress",
+        backAction
+      );
 
-    return () => backHandler.remove();
-  }, [navigation])
-);
-
+      return () => backHandler.remove();
+    }, [navigation])
+  );
 
   useEffect(() => {
     const fetchPhoneNumber = async () => {
@@ -149,6 +157,8 @@ useFocusEffect(
   const [isCalendarVisible, setCalendarVisible] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
+  const [showAlert, setShowAlert] = useState(false);
+
   const [quantities, setQuantities] = useState({
     guava: "",
     orange: "",
@@ -297,79 +307,106 @@ useFocusEffect(
         );
         console.log("Vegetarian diet saved successfully:", response.data);
 
-        // Show success alert
-        Alert.alert(
-          "Success",
-          texts[language].successMessage, // Use the success message based on the selected language
-          [
-            {
-              text: "OK",
-              onPress: () => {
-                // Navigate based on the diet type
-                if (patientDetails && patientDetails.diet === "Both") {
-                  navigation.navigate("NonVegDietPage"); // Navigate to NonVegDietPage
-                } else {
-                  navigation.navigate("WaterPage"); // Navigate to WaterPage
-                }
-              },
-            },
-          ]
-        );
+        // Set custom success alert
+        setAlertTitle(languageText.alertSuccessTitle);
+        setAlertMessage(texts[language].successMessage);
+        setAlertVisible(true); // Show the alert with the appropriate state
+
+        // You can navigate here if needed
+        if (patientDetails.diet === "Both") {
+          navigation.navigate("NonVegDietPage");
+        } else {
+          navigation.navigate("WaterPage");
+        }
       } catch (error) {
+        // Handle Axios error responses
         if (axios.isAxiosError(error)) {
-          // Handle specific backend error responses
           const errorMessages = error.response?.data || {};
 
-          // Check for unique constraint errors
           if (
             errorMessages.non_field_errors &&
             errorMessages.non_field_errors.includes(
               "The fields patient_id, date must make a unique set."
             )
           ) {
-            Alert.alert(texts[language].error, texts[language].entryExists, [
-              { text: "OK" },
-            ]);
+            setAlertTitle(texts[language].error);
+            setAlertMessage(texts[language].entryExists);
           } else if (errorMessages.date) {
-            Alert.alert(
-              texts[language].error, // Translation for "Error"
-              texts[language].dateRequired,
-              [{ text: "OK" }]
-            );
+            setAlertTitle(texts[language].error);
+            setAlertMessage(texts[language].dateRequired);
           } else if (!requestData.patient_id || !requestData.date) {
-            Alert.alert(
-              texts[language].error, // Translation for "Error"
-              texts[language].valuesRequired,
-              [{ text: "OK" }]
-            );
+            setAlertTitle(texts[language].error);
+            setAlertMessage(texts[language].valuesRequired);
           } else {
-            // Fallback for other errors
-            Alert.alert(
-              texts[language].error,
-              texts[language].issueSavingDiet,
-              [{ text: "OK" }]
-            );
+            setAlertTitle(texts[language].error);
+            setAlertMessage(texts[language].issueSavingDiet);
           }
         } else {
-          Alert.alert(texts[language].error, texts[language].unexpectedError, [
-            { text: "OK" },
-          ]);
+          setAlertTitle(texts[language].error);
+          setAlertMessage(texts[language].unexpectedError);
         }
+        setAlertVisible(true); // Show the custom alert message
       }
-    } else {
-      console.error("No patient details available.");
     }
   };
 
-  const handleCancel = () => {
+  /* const handleCancel = () => {
     Alert.alert("Cancel", "Are you sure you want to cancel?", [
       { text: "No", style: "cancel" },
       { text: "Yes", onPress: () => navigation.navigate("DailyUploads") }, // Navigate to PatientDashboard
     ]);
+  }; */
+
+  const handleCancel = () => {
+    // Trigger the custom alert instead of the default Alert
+    setCancelAlertVisible(true);
   };
 
   return (
     <SafeAreaProvider>
+       {/* Custom alert for errors */}
+   {/* Custom alerts */}
+   
+      <CustomAlert
+        title={alertTitle}
+        message={alertMessage}
+        visible={alertVisible}
+        onClose={() => {
+          setAlertVisible(false); // Close the alert
+          if (alertMode === "success") {
+            // Navigate to WaterPage after the success alert closes
+            navigation.navigate("NonVegDietPage");
+          }
+        }}
+        onYes={() => {
+          setAlertVisible(false); // Close the alert
+          if (alertMode === "success") {
+            // Navigate to WaterPage after the success alert closes
+            navigation.navigate("NonVegDietPage");
+          }
+        }}
+        okText={languageText.alertOk} // Translated OK text
+  yesText={languageText.alertYes} // Translated Yes text
+  noText={languageText.alertNo} // Translated No text
+      />
+      
+      {/* Custom cancel alert */}
+      <CustomAlert
+        title={languageText.alertCancelTitle}  // Use translation for the title
+        message={languageText.alertCancelMessage}
+        visible={cancelAlertVisible}
+        onClose={() => setCancelAlertVisible(false)} // Close the alert on close
+        mode="confirm"
+        onYes={() => {
+          // Navigate to PatientDashboardPage when "Yes" is clicked
+          navigation.navigate("PatientDashboardPage");
+          setCancelAlertVisible(false); // Close the alert after navigation
+        }}
+        onNo={() => setCancelAlertVisible(false)} // Close the alert on "No"
+        yesText={languageText.alertYes}  // Use translation for Yes button text
+        noText={languageText.alertNo} 
+      />
+      
       <SafeAreaView style={styles.container}>
         <View style={styles.translateContainer}>
           <TouchableOpacity
@@ -478,15 +515,16 @@ useFocusEffect(
                         keyboardType="numeric"
                         value={responses[index].quantity}
                         onChangeText={(text) =>
-                          handleQuantityChange(index, text)
+                        handleQuantityChange(index, text)
+
                         }
                       />
-                      <Icon
+                      {/* <Icon
                         name="ramen-dining"
                         size={20}
                         color="#3CB371"
                         style={styles.quantityIcon}
-                      />
+                      /> */}
                     </View>
                   )}
                 </View>
@@ -847,7 +885,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-start",
     marginTop: 0,
     paddingTop: 60,
-    paddingBottom: 10, // Ensure space at the bottom for the submit button
+    paddingBottom: 20, // Ensure space at the bottom for the submit button
     backgroundColor: "#fff",
     alignItems: "center",
   },
@@ -972,16 +1010,7 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
 
-  quantityInput: {
-    borderColor: "#ccc",
-    borderWidth: 1,
-    borderRadius: 30,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    width: "100%",
-    textAlign: "center",
-    marginTop: 10,
-  },
+ 
   button: {
     flex: 1,
     paddingVertical: 10,
@@ -1015,14 +1044,27 @@ const styles = StyleSheet.create({
   quantityContainer: {
     flexDirection: "row",
     alignItems: "center",
+    alignSelf: "center",
     marginTop: 10,
     position: "relative", // Set position relative to contain the icon
   },
+  quantityInput: {
+    borderColor: "#ccc",
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    width: "100%",
+    
+    marginTop: 10,
+    fontSize: 12,
+  },
   quantityIcon: {
     position: "absolute",
-    left: 10, // Adjust as needed
+    marginLeft: 10,
+    marginRight: 5,
     color: "#c0c0c0",
-    bottom: 7,
+    bottom: 10,
   },
   datePickerField: {
     width: "50%",
@@ -1097,6 +1139,7 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     marginTop: 5,
     marginLeft: 5,
+    fontSize: 12,
   },
   orangeContainer: {
     borderRadius: 15,
@@ -1114,6 +1157,7 @@ const styles = StyleSheet.create({
     resizeMode: "contain",
   },
   orangeQty: {
+    fontSize: 12,
     width: "38%",
     textAlign: "center",
     right: 0,
@@ -1140,6 +1184,7 @@ const styles = StyleSheet.create({
     resizeMode: "contain",
   },
   appleQty: {
+    fontSize: 12,
     width: "38%",
     textAlign: "center",
     left: 180,
@@ -1151,6 +1196,7 @@ const styles = StyleSheet.create({
     marginLeft: 5,
   },
   grapesContainer: {
+    
     borderRadius: 15,
     padding: 10,
     backgroundColor: "#E3E4FA",
@@ -1166,6 +1212,7 @@ const styles = StyleSheet.create({
     resizeMode: "contain",
   },
   grapesQty: {
+    fontSize: 12,
     width: "38%",
     textAlign: "center",
     alignItems: "center",
@@ -1194,6 +1241,7 @@ const styles = StyleSheet.create({
     resizeMode: "contain",
   },
   muskmelonQty: {
+    fontSize: 12,
     width: "38%",
     textAlign: "center",
     left: 200,
@@ -1214,12 +1262,13 @@ const styles = StyleSheet.create({
   },
   watermelonImage: {
     width: "100%",
-    height: "170%",
+    height: "150%",
     bottom: 60,
-    left: 120,
+    left: 130,
     resizeMode: "contain",
   },
   watermelonQty: {
+    fontSize: 12,
     width: "38%",
     textAlign: "center",
     right: 0,
@@ -1234,7 +1283,7 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     padding: 10,
     backgroundColor: "#FFFACD",
-    height: 100,
+    height: 130,
     width: "100%",
     marginBottom: 20,
   },
@@ -1245,16 +1294,7 @@ const styles = StyleSheet.create({
     right: 120,
     resizeMode: "contain",
   },
-  othersQty: {
-    width: "38%",
-    textAlign: "center",
-    left: 200,
-    top: 5,
-    height: 40,
-    backgroundColor: "#FFFFF0",
-    borderRadius: 30,
-    marginTop: 5,
-  },
+  
   guavaTitle: {
     position: "absolute",
     right: 180,
@@ -1369,11 +1409,12 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   legumeLabel: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "bold",
     textAlign: "center",
   },
   legumeInput: {
+    fontSize: 12,
     width: 80,
     height: 40,
     borderWidth: 1,
@@ -1439,6 +1480,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   legumeInputOther: {
+    fontSize: 12,
     width: "100%",
     height: 60,
     borderWidth: 1,
@@ -1449,7 +1491,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   legumeOtherLabel: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "bold",
     textAlign: "left",
     marginBottom: 10,
@@ -1459,6 +1501,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   legumeInputQty: {
+    fontSize: 12,
     width: "100%",
     height: 40,
     borderWidth: 1,
@@ -1480,7 +1523,7 @@ const styles = StyleSheet.create({
     marginBottom: 8, // Space between inputs
   },
   othersFruitName: {
-    fontSize: 14,
+    fontSize: 12,
     flex: 1,
     borderWidth: 1,
     borderColor: "#ccc",
@@ -1490,6 +1533,7 @@ const styles = StyleSheet.create({
     //lineHeight: 2,
   },
   othersQtyss: {
+    fontSize: 12,
     width: 80, // Fixed width for quantity input
     borderWidth: 1,
     borderColor: "#ccc",

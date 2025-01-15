@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
-  Text,
+  Text as RNText,
   View,
   StyleSheet,
   TouchableOpacity,
@@ -13,7 +13,7 @@ import {
   Modal,
   SafeAreaView,
   StatusBar,
-  BackHandler
+  BackHandler,
 } from "react-native";
 import { Audio } from "expo-av";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -26,6 +26,12 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../../type";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
+import CustomAlert from "../components/CustomAlert";
+
+// Custom Text component to disable font scaling globally
+const Text = (props: any) => {
+  return <RNText {...props} allowFontScaling={false} />;
+};
 
 interface PatientDetails {
   patient_id: string; // Keep the patient_id string if you need it for other purposes
@@ -60,21 +66,26 @@ const WaterPage: React.FC = () => {
   const [patientDetails, setPatientDetails] = useState<PatientDetails | null>(
     null
   );
+  const [cancelAlertVisible, setCancelAlertVisible] = useState(false);
   const scaleAnimation = useRef(new Animated.Value(1)).current; // Initialize scaleAnimation
   // New state for confetti visibility
   const [showConfetti, setShowConfetti] = useState(false);
-
+  const [alertTitle, setAlertTitle] = useState("");
+  const [alertMessage, setAlertMessage] = useState("");
+  const [customAlertVisible, setCustomAlertVisible] = useState(false);
   const [confettiTimeout, setConfettiTimeout] = useState<NodeJS.Timeout | null>(
     null
   );
   const [showCongrats, setShowCongrats] = useState(false);
+  const [alertVisible, setAlertVisible] = useState(false); // For custom alert visibility
 
+  const [alertMode, setAlertMode] = useState(""); // For alert mode (e.g., success, error)
 
   //Device back button handling
-    useFocusEffect(
+  useFocusEffect(
     React.useCallback(() => {
       const backAction = () => {
-        Alert.alert("Cancel", "Are you sure you want to cancel?", [
+        /* Alert.alert("Cancel", "Are you sure you want to cancel?", [
           {
             text: "No",
             onPress: () => null,
@@ -84,15 +95,16 @@ const WaterPage: React.FC = () => {
             text: "Yes",
             onPress: () => navigation.navigate("PatientDashboardPage"),
           },
-        ]);
+        ]); */
+        setCancelAlertVisible(true);
         return true;
       };
-  
+
       const backHandler = BackHandler.addEventListener(
         "hardwareBackPress",
         backAction
       );
-  
+
       return () => backHandler.remove();
     }, [navigation])
   );
@@ -129,43 +141,42 @@ const WaterPage: React.FC = () => {
   };
 
   const showCongratulationAlert = () => {
-  setShowCongrats(true);
+    setShowCongrats(true);
 
-  // Sequence of animations
-  Animated.sequence([
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 500,
-      useNativeDriver: true,
-    }),
-    Animated.timing(fadeAnim, {
-      toValue: 0,
-      duration: 500,
-      delay: 2000,
-      useNativeDriver: true,
-    }),
-  ]).start(() => {
-    // Hide the modal after animations are complete
-    setTimeout(() => setShowCongrats(false), 2500); // Hide the modal after 3 seconds
-  });
-};
+    // Sequence of animations
+    Animated.sequence([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 500,
+        delay: 2000,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      // Hide the modal after animations are complete
+      setTimeout(() => setShowCongrats(false), 2500); // Hide the modal after 3 seconds
+    });
+  };
 
-const triggerConfetti = () => {
-  // Clear any existing timeout to prevent conflicts
-  if (confettiTimeout) {
-    clearTimeout(confettiTimeout);
-  }
+  const triggerConfetti = () => {
+    // Clear any existing timeout to prevent conflicts
+    if (confettiTimeout) {
+      clearTimeout(confettiTimeout);
+    }
 
-  setShowConfetti(true);
+    setShowConfetti(true);
 
-  // Hide confetti after 4 seconds
-  const timeoutId = setTimeout(() => {
-    setShowConfetti(false);
-  }, 4000); // Hide after 4 seconds
+    // Hide confetti after 4 seconds
+    const timeoutId = setTimeout(() => {
+      setShowConfetti(false);
+    }, 4000); // Hide after 4 seconds
 
-  setConfettiTimeout(timeoutId); // Store the timeout ID
-};
-
+    setConfettiTimeout(timeoutId); // Store the timeout ID
+  };
 
   const handleAddWater = (amount: number) => {
     if (selectedAmount !== amount) {
@@ -220,22 +231,24 @@ const triggerConfetti = () => {
   }, []);
 
   const handleSubmit = async () => {
+    // Check if selected date is null
     if (!selectedDate) {
-      Alert.alert("Error", "Please select a date for the water intake.", [
-        { text: "OK" },
-      ]);
+      setAlertTitle(languageText.errorTitle);
+      setAlertMessage(languageText.alertWater);
+      setAlertMode("error");
+      setCustomAlertVisible(true); // Show custom alert
       return;
     }
 
-    // Format the selected date to 'YYYY-MM-DD'
-    const formattedDate = selectedDate.toISOString().split("T")[0]; // This extracts just the date part
+    // Format the date
+    const formattedDate = selectedDate.toISOString().split("T")[0];
 
     try {
       const response = await axios.post(
         `https://indheart.pinesphere.in/patient/water-data/`,
         {
           patient_id: patientDetails?.patient_id,
-          date: formattedDate, // Send the formatted date
+          date: formattedDate,
           ml_500: waterIntake >= 500,
           ml_1000: waterIntake >= 1000,
           ml_1500: waterIntake >= 1500,
@@ -246,18 +259,13 @@ const triggerConfetti = () => {
       );
 
       if (response.status === 201) {
-        Alert.alert(
-          languageText.success,
-          `${languageText.recorded} ${waterIntake} ml ${languageText.intake}`,
-          [
-            {
-              text: "OK",
-              onPress: () => navigation.navigate("PatientMedication"),
-            },
-          ] // Navigate after alert
+        setAlertTitle(languageText.success);
+        setAlertMessage(
+          `${languageText.recorded} ${waterIntake} ml ${languageText.intake}`
         );
+        setAlertMode("success");
+        setCustomAlertVisible(true); // Show custom alert
       } else {
-        // If the status code is not 201
         throw new Error(`Unexpected response code: ${response.status}`);
       }
     } catch (error) {
@@ -265,27 +273,25 @@ const triggerConfetti = () => {
 
       if (axios.isAxiosError(error)) {
         if (error.response) {
-          // Check if the error message indicates a unique constraint violation
           if (error.response.data.non_field_errors) {
-            errorMessage =
-              "Submission failed: This date has already been saved for this patient.";
+            errorMessage = languageText.dateAlreadySavedWater;
           } else {
-            // General error response
             errorMessage =
-              error.response.data.detail || "Failed to submit water intake.";
+              error.response.data.detail || languageText.defaultErrorMessage;
           }
         } else if (error.request) {
-          // No response received
-          errorMessage =
-            "No response from server. Please check your connection.";
+          //errorMessage = "No response from server. Please check your connection.";
+          errorMessage = languageText.noResponseFromServer;
         }
       } else {
-        // Non-Axios or general error
         errorMessage = (error as Error).message;
       }
 
-      // Show the same success popup with the error message
-      Alert.alert("Error", errorMessage, [{ text: "OK" }]);
+      // Show the error message in custom alert
+      setAlertTitle(languageText.alertErrorTitle);
+      setAlertMessage(errorMessage);
+      setAlertMode("error");
+      setCustomAlertVisible(true); // Show custom alert
     }
   };
 
@@ -306,20 +312,20 @@ const triggerConfetti = () => {
     //Alert.alert(languageText.clearedTitle, languageText.clearedMessage);
   };
 
- // Modified sound cleanup function
- const cleanupSound = async () => {
-  if (sound) {
-    try {
-      await sound.stopAsync();
-      await sound.unloadAsync();
-    } catch (error) {
-      console.log("Error cleaning up sound:", error);
+  // Modified sound cleanup function
+  const cleanupSound = async () => {
+    if (sound) {
+      try {
+        await sound.stopAsync();
+        await sound.unloadAsync();
+      } catch (error) {
+        console.log("Error cleaning up sound:", error);
+      }
     }
-  }
-};
+  };
 
   // Modified handleCancel with sound cleanup
-  const handleCancel = async () => {
+  /*  const handleCancel = async () => {
     Alert.alert("Cancel", "Are you sure you want to cancel?", [
       { text: "No", style: "cancel" },
       { 
@@ -330,8 +336,11 @@ const triggerConfetti = () => {
         }
       },
     ]);
+  }; */
+  const handleCancel = () => {
+    // Trigger the custom alert instead of the default Alert
+    setCancelAlertVisible(true);
   };
-
   useEffect(() => {
     const fillHeight = (waterIntake / 2000) * 100;
     Animated.timing(fillAnimation, {
@@ -342,14 +351,14 @@ const triggerConfetti = () => {
     }).start();
   }, [waterIntake]);
 
- // Add navigation event listener for cleanup
- useEffect(() => {
-  const unsubscribe = navigation.addListener('beforeRemove', async (e) => {
-    await cleanupSound();
-  });
+  // Add navigation event listener for cleanup
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("beforeRemove", async (e) => {
+      await cleanupSound();
+    });
 
-  return unsubscribe;
-}, [navigation, sound]);
+    return unsubscribe;
+  }, [navigation, sound]);
 
   // Modified sound loading effect
   useEffect(() => {
@@ -390,12 +399,42 @@ const triggerConfetti = () => {
 
   return (
     <SafeAreaProvider>
+      <CustomAlert
+        title="Cancel"
+        message="Are you sure you want to cancel?"
+        visible={cancelAlertVisible}
+        onClose={() => setCancelAlertVisible(false)} // Close the alert on close
+        mode="confirm"
+        onYes={() => {
+          // Navigate to PatientDashboardPage when "Yes" is clicked
+          navigation.navigate("PatientDashboardPage");
+          setCancelAlertVisible(false); // Close the alert after navigation
+        }}
+        onNo={() => setCancelAlertVisible(false)} // Close the alert on "No"
+        okText={languageText.alertOk} // Translated OK text
+        yesText={languageText.alertYes} // Translated Yes text
+        noText={languageText.alertNo} // Translated No text
+      />
       <SafeAreaView style={styles.safeArea}>
         {/* Adjust StatusBar visibility */}
         <StatusBar
           barStyle="dark-content" // Set the color of status bar text
           backgroundColor="transparent" // Make the background transparent
           translucent={true} // Make status bar translucent
+        />
+        <CustomAlert
+          title={alertTitle}
+          message={alertMessage}
+          visible={customAlertVisible}
+          onClose={() => {
+            setCustomAlertVisible(false); // Close the alert
+            if (alertMode === "success") {
+              navigation.navigate("PatientMedication"); // Navigate on success
+            }
+          }}
+          okText={languageText.alertOk} // Translated OK text
+          yesText={languageText.alertYes} // Translated Yes text
+          noText={languageText.alertNo} // Translated No text
         />
 
         <ImageBackground
@@ -434,7 +473,9 @@ const triggerConfetti = () => {
                   source={require("../../assets/images/congratulation.png")} // Replace with your image path
                   style={styles.congratulationsImage}
                 />
-                <Text style={styles.modalTitle}>{languageText.congratulations}</Text>
+                <Text style={styles.modalTitle}>
+                  {languageText.congratulations}
+                </Text>
                 <Text style={styles.modalText}>{languageText.dailyGoal}</Text>
               </View>
             </View>
@@ -618,16 +659,16 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent", // Light background for contrast
     width: "100%", // Slightly reduced width for padding
     height: 100,
-    
+
     borderRadius: 15,
     top: 10,
     padding: 10,
     marginLeft: 5,
   },
-  
+
   translateButton: {
     position: "absolute",
-    
+
     right: 10,
     backgroundColor: "#ffffff",
     flexDirection: "row",
@@ -640,11 +681,9 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
     zIndex: 1,
-    
-    // Adjusted marginBottom to reduce space
-    
-  },
 
+    // Adjusted marginBottom to reduce space
+  },
 
   circularContainer: {
     width: 340, // Adjust width for the circular container
@@ -857,9 +896,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     top: 10,
     marginTop: 30,
-    
   },
- /*  translateContainer: {
+  /*  translateContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",

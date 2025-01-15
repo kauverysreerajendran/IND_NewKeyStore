@@ -26,10 +26,12 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
 import { RFValue } from "react-native-responsive-fontsize";
+import CustomAlert from "../components/CustomAlert";
 
-// Custom Text component to disable font scaling globally 
-const Text = (props: any) => { return <RNText {...props} allowFontScaling={false} />; };
-
+// Custom Text component to disable font scaling globally
+const Text = (props: any) => {
+  return <RNText {...props} allowFontScaling={false} />;
+};
 
 // Define the props type
 
@@ -65,6 +67,8 @@ const Walking: React.FC<WalkingProps> = ({ navigation }) => {
   const [hours, setHours] = useState("");
   const [difficultyText, setText] = useState("");
   const [minutes, setMinutes] = useState("");
+  const [isTranslated, setIsTranslated] = useState(false); // State to manage translation
+
   const [dateOfOperation, setDateOfOperation] = useState<Date | null>(
     new Date() // Ensure this is never null during initialization
   );
@@ -86,6 +90,11 @@ const Walking: React.FC<WalkingProps> = ({ navigation }) => {
   );
   // New state for modal popup
   const [showCongrats, setShowCongrats] = useState(false);
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState("");
+  const [alertMessage, setAlertMessage] = useState("");
+  const [cancelAlertVisible, setCancelAlertVisible] = useState(false);
+  const [customAlertVisible, setCustomAlertVisible] = useState(false);
 
   // Function to trigger the styled congratulation message
   const showCongratulationAlert = () => {
@@ -114,7 +123,7 @@ const Walking: React.FC<WalkingProps> = ({ navigation }) => {
   useFocusEffect(
     React.useCallback(() => {
       const backAction = () => {
-        Alert.alert("Cancel", "Are you sure you want to cancel?", [
+        /* Alert.alert("Cancel", "Are you sure you want to cancel?", [
           {
             text: "No",
             onPress: () => null,
@@ -124,7 +133,8 @@ const Walking: React.FC<WalkingProps> = ({ navigation }) => {
             text: "Yes",
             onPress: () => navigation.navigate("PatientDashboardPage"),
           },
-        ]);
+        ]); */
+        setCancelAlertVisible(true);
         return true;
       };
 
@@ -315,9 +325,12 @@ const Walking: React.FC<WalkingProps> = ({ navigation }) => {
 
     // Check if the form is filled
     if (!date || !distance || !hours || !difficultyText) {
-      Alert.alert(languageText.errorTitle, languageText.errorMessage);
+      setAlertTitle(languageText.errorTitle);
+      setAlertMessage(languageText.errorMessage);
+      setCustomAlertVisible(true); // Show custom alert
       return;
     }
+
     try {
       const response = await axios.post(
         "https://indheart.pinesphere.in/patient/walking-data/",
@@ -333,15 +346,11 @@ const Walking: React.FC<WalkingProps> = ({ navigation }) => {
       );
 
       // Make API call to save walking data
-
       if (response.status === 201) {
-        //showCongratulationAlert(); // Show custom styled modal alert
-
-        Alert.alert(
-          languageText.successTitle,
-          languageText.walkingDetailsSubmitted,
-          [{ text: "OK", onPress: () => navigation.navigate("YogaPage") }] // Navigate after alert
-        );
+        // Show custom styled modal alert for success
+        setAlertTitle(languageText.successTitle);
+        setAlertMessage(languageText.walkingDetailsSubmitted);
+        setCustomAlertVisible(true); // Show custom alert for success
       } else {
         throw new Error(`Unexpected response code: ${response.status}`);
       }
@@ -352,12 +361,11 @@ const Walking: React.FC<WalkingProps> = ({ navigation }) => {
         if (error.response) {
           // Check if the error message indicates a unique constraint violation
           if (error.response.data.non_field_errors) {
-            errorMessage =
-              "Submission failed: This date has already been saved for this patient.";
+            errorMessage = languageText.dateAlreadySavedWater;
           } else {
             // General error response
             errorMessage =
-              error.response.data.detail || "Failed to submit water intake.";
+              error.response.data.detail || "Failed to submit walking details.";
           }
         } else if (error.request) {
           // No response received
@@ -369,8 +377,10 @@ const Walking: React.FC<WalkingProps> = ({ navigation }) => {
         errorMessage = (error as Error).message;
       }
 
-      // Show the same success popup with the error message
-      Alert.alert("Error", errorMessage, [{ text: "OK" }]);
+      // Show the error message in custom alert
+      setAlertTitle(languageText.errorTitle);
+      setAlertMessage(errorMessage);
+      setCustomAlertVisible(true); // Show custom alert for the error
     }
   };
 
@@ -392,7 +402,7 @@ const Walking: React.FC<WalkingProps> = ({ navigation }) => {
     setIsTranslatingToTamil((prev) => !prev);
   }, []);
 
-  const handleCancel = () => {
+  /*   const handleCancel = () => {
     Alert.alert(
       languageText.confirmCancelTitle,
       languageText.confirmCancelMessage,
@@ -405,6 +415,10 @@ const Walking: React.FC<WalkingProps> = ({ navigation }) => {
       ],
       { cancelable: false }
     );
+  }; */
+  const handleCancel = () => {
+    // Trigger the custom alert instead of the default Alert
+    setCancelAlertVisible(true);
   };
 
   const onDateChange = (event: any, selectedDate: Date | undefined) => {
@@ -425,6 +439,38 @@ const Walking: React.FC<WalkingProps> = ({ navigation }) => {
   };
   return (
     <SafeAreaProvider>
+      <CustomAlert
+        title={alertTitle}
+        message={alertMessage}
+        visible={customAlertVisible}
+        onClose={() => {
+          setCustomAlertVisible(false); // Close the alert
+          if (alertTitle === languageText.successTitle) {
+            navigation.navigate("YogaPage"); // Navigate to Yoga screen if success
+          }
+        }}
+        okText={languageText.alertOk} // Translated OK text
+        yesText={languageText.alertYes} // Translated Yes text
+        noText={languageText.alertNo} // Translated No text
+      />
+
+      {/* Custom cancel alert */}
+      <CustomAlert
+        title={languageText.alertCancelTitle}
+        message={languageText.alertCancelMessage}
+        visible={cancelAlertVisible}
+        onClose={() => setCancelAlertVisible(false)} // Close the alert on close
+        mode="confirm"
+        onYes={() => {
+          // Navigate to PatientDashboardPage when "Yes" is clicked
+          navigation.navigate("PatientDashboardPage");
+          setCancelAlertVisible(false); // Close the alert after navigation
+        }}
+        onNo={() => setCancelAlertVisible(false)} // Close the alert on "No"
+        okText={languageText.alertOk} // Translated OK text
+        yesText={languageText.alertYes} // Translated Yes text
+        noText={languageText.alertNo} // Translated No text
+      />
       <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
         {/* Adjust StatusBar visibility */}
         <StatusBar
@@ -554,7 +600,8 @@ const Walking: React.FC<WalkingProps> = ({ navigation }) => {
               </Text>
               <TextInput
                 style={[styles.input, { fontSize: RFValue(10) }]}
-                placeholder={`Enter distance (e.g., 0.5 or 1 km)`}
+                //placeholder={`Enter distance (e.g., 0.5 or 1 km)`}
+                placeholder={languageText.enterDistance}
                 onChangeText={(text) => {
                   setDistance(text); // Update the state for distance
 
@@ -663,7 +710,7 @@ const InfoCard: React.FC<InfoCardProps> = ({ icon, title, info, onPress }) => {
   return (
     <TouchableOpacity style={styles.card} onPress={onPress}>
       <View style={styles.iconContainer}>
-        <FontAwesome name={icon} size={24} color="#786" />
+        <FontAwesome name={icon} size={22} color="#13c89e" />
       </View>
       <View style={styles.textContainer}>
         <Text style={styles.cardTitle}>{title}</Text>
@@ -691,7 +738,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   title: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: "bold",
     textAlign: "left",
     marginBottom: 16,
@@ -706,24 +753,25 @@ const styles = StyleSheet.create({
   },
   imageInsideProgress: {
     position: "absolute",
-    width: 150,
-    height: 150,
-    top: 50,
+    width: 250,
+    height: 200,
+    top: 30,
   },
   goalText: {
     top: -30,
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "bold",
     backgroundColor: "#13c89e",
     elevation: 2,
     padding: 10,
+    paddingHorizontal: 20, // Add horizontal padding for space around the text
     borderRadius: 40,
     textAlign: "center",
-    width: "50%",
     alignSelf: "center",
     color: "#e1f6f2",
     marginBottom: -20,
   },
+
   infoContainer: {
     marginBottom: 10,
     marginTop: 10,
@@ -731,8 +779,11 @@ const styles = StyleSheet.create({
   cardRow: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",  // Ensure vertical alignment of items
     marginBottom: 2,
+    paddingHorizontal: -10,  // Add some horizontal padding to avoid overlap
   },
+  
   iconContainer: {
     top: 20,
   },
@@ -760,7 +811,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 5,
     bottom: 10,
-    left: 23,
+    left: 18,
   },
   cardInfo: {
     fontSize: 14,

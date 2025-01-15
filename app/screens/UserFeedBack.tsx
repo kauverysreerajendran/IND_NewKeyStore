@@ -18,6 +18,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { RootStackParamList } from "../../type";
+import CustomAlert from "../components/CustomAlert";
 
 // Custom Text component to disable font scaling globally 
 const Text = (props: any) => { return <RNText {...props} allowFontScaling={false} />; };
@@ -40,6 +41,9 @@ const UserFeedbackForm: React.FC = () => {
   const [rating, setRating] = useState(0); // State to manage the selected rating
   const [phoneNumber, setPhoneNumber] = useState("");
   const [patientDetails, setPatientDetails] = useState<PatientDetails | null>(null);
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState('');
+  const [alertMessage, setAlertMessage] = useState('');
 
   useEffect(() => {
     const fetchPhoneNumber = async () => {
@@ -68,7 +72,7 @@ const UserFeedbackForm: React.FC = () => {
     }
   };
 
-  const handleSubmit = async () => {
+ /*  const handleSubmit = async () => {
     // Get the current date in 'YYYY-MM-DD' format
     const currentDate = new Date().toISOString().split('T')[0]; // Format: 'YYYY-MM-DD'
   
@@ -81,9 +85,9 @@ const UserFeedbackForm: React.FC = () => {
       });
   
       if (response.status === 201) {
-        Alert.alert(
+         Alert.alert(
           "Your feedback data submitted!"
-        );
+        ); 
          // Clear the form fields
       setFeedback(""); // Reset feedback to an empty string
       setRating(0);    // Reset rating to its initial state (0)
@@ -119,10 +123,83 @@ const UserFeedbackForm: React.FC = () => {
         [{ text: "OK" }]
       );
     }
+  }; */
+  
+  const handleSubmit = async () => {
+    // Get the current date in 'YYYY-MM-DD' format
+    const currentDate = new Date().toISOString().split('T')[0]; // Format: 'YYYY-MM-DD'
+  
+    try {
+      const response = await axios.post(`https://indheart.pinesphere.in/patient/user-feedback-data/`, {
+        patient_id: patientDetails?.patient_id,
+        feedback: feedback,
+        rating: rating,
+        date: currentDate, // Include the current date
+      });
+  
+      if (response.status === 201) {
+        setAlertMessage("Your feedback data submitted!");
+        setAlertTitle("Success");
+        setAlertVisible(true); // Show the alert
+        setFeedback(""); // Reset feedback to an empty string
+        setRating(0);    // Reset rating to its initial state (0)
+      } else {
+        throw new Error(`Unexpected response code: ${response.status}`);
+      }
+    } catch (error) {
+      let errorMessage = "Failed to submit user feedback.";
+  
+      if (axios.isAxiosError(error)) {
+        if (error.response) {
+          if (error.response.data.non_field_errors) {
+            errorMessage = "Submission failed: This date has already been saved for this patient.";
+          } else {
+            errorMessage = error.response.data.detail || "Failed to submit user feedback.";
+          }
+        } else if (error.request) {
+          errorMessage = "No response from server. Please check your connection.";
+        }
+      } else {
+        errorMessage = (error as Error).message;
+      }
+  
+      // Show the error popup with the error message using CustomAlert
+      setAlertMessage(errorMessage);
+      setAlertTitle("Error");
+      setAlertVisible(true); // Show the error alert
+    }
   };
   
+
   return (
     <SafeAreaProvider> 
+      <CustomAlert
+  title={alertTitle}
+  message={alertMessage}
+  visible={alertVisible}
+  onClose={() => {
+    console.log('Alert closed');
+    setAlertVisible(false);
+
+    // Example: Navigate to a specific screen after closing the alert
+    if (alertTitle === "Success") {
+      navigation.navigate("PatientDashboardPage");  // Navigate to WaterPage on success
+    }
+  }}
+  onYes={() => {
+    console.log('Alert confirmed');
+    setAlertVisible(false);
+
+    // Navigate based on the alert mode or title
+    if (alertTitle === "Success") {
+      navigation.navigate("PatientDashboardPage");  // Navigate on success
+    } else {
+      console.log('Error alert confirmed, no navigation.');
+    }
+  }}
+/>
+
+
 <SafeAreaView style={styles.safeArea}>
       {/* Adjust StatusBar visibility */}
       <StatusBar 

@@ -23,6 +23,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { RFValue } from "react-native-responsive-fontsize";
+import CustomAlert from "../components/CustomAlert";
+
 // Custom Text component to disable font scaling globally
 const Text = (props: any) => {
   return <RNText {...props} allowFontScaling={false} />;
@@ -63,16 +65,22 @@ const YogaPage: React.FC<WalkingProps> = ({ navigation }) => {
   const [patientDetails, setPatientDetails] = useState<PatientDetails | null>(
     null
   );
+  const [alertMode, setAlertMode] = useState("");
+  const [customAlertVisible, setCustomAlertVisible] = useState(false);
+  const [cancelAlertVisible, setCancelAlertVisible] = useState(false);
   // State for Yes/No selections
   const [yogaToday, setYogaToday] = useState<string | null>(null);
   const [mindfulYoga, setMindfulYoga] = useState<string | null>(null);
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState("");
+  const [alertMessage, setAlertMessage] = useState("");
 
   //Device back button handler
   useFocusEffect(
     React.useCallback(() => {
       const backAction = () => {
-        Alert.alert("Cancel", "Are you sure you want to cancel?", [
-          {
+        /*  Alert.alert("Cancel", "Are you sure you want to cancel?", [
+         {
             text: "No",
             onPress: () => null,
             style: "cancel",
@@ -81,7 +89,8 @@ const YogaPage: React.FC<WalkingProps> = ({ navigation }) => {
             text: "Yes",
             onPress: () => navigation.navigate("PatientDashboardPage"),
           },
-        ]);
+        ]); */
+        setCancelAlertVisible(true);
         return true;
       };
 
@@ -126,9 +135,12 @@ const YogaPage: React.FC<WalkingProps> = ({ navigation }) => {
     }
   };
   // Handler functions for buttons
-  const handleSubmit = async () => {
+  /*  const handleSubmit = async () => {
     if (!patientDetails || !selectedDate) {
-      Alert.alert("Error", "Please make sure all fields are filled.");
+      //Alert.alert("Error", "Please make sure all fields are filled.");
+      setAlertTitle("Error");
+      setAlertMessage("Please make sure all fields are filled.");
+      setAlertVisible(true);
       return;
     }
 
@@ -186,6 +198,73 @@ const YogaPage: React.FC<WalkingProps> = ({ navigation }) => {
       // Show the same success popup with the error message
       Alert.alert("Error", errorMessage, [{ text: "OK" }]);
     }
+  }; */
+
+  const handleSubmit = async () => {
+    if (!patientDetails || !selectedDate) {
+      setAlertTitle(languageText.errorTitle);
+      setAlertMessage(languageText.errorMessage);
+      setAlertVisible(true);
+      return;
+    }
+
+    try {
+      const payload = {
+        patient_id: patientDetails.patient_id,
+        date: selectedDate.toISOString().split("T")[0], // Format date as YYYY-MM-DD
+        performed_yoga: yogaToday === "yes", // Convert "yes" to true and "no" to false
+        duration_hours: parseInt(durationHours, 10) || 0,
+        duration_minutes: parseInt(durationMinutes, 10) || 0,
+        mindful_yoga: mindfulYoga === "yes", // Convert "yes" to true and "no" to false
+      };
+
+      console.log("Payload:", payload);
+
+      const response = await axios.post(
+        "https://indheart.pinesphere.in/patient/yoga-data/",
+        payload
+      );
+
+      if (response.status === 201) {
+        // Show custom alert for success
+        setAlertTitle(languageText.successTitle);
+        setAlertMessage(languageText.alertSuccessMessage);
+        setAlertVisible(true); // Show custom alert
+      } else {
+        // Show custom alert for failure
+        setAlertTitle(languageText.errorTitle);
+        setAlertMessage("Failed to save yoga activity.");
+        setAlertVisible(true); // Show custom alert
+      }
+    } catch (error) {
+      let errorMessage = languageText.defaultErrorYogaMessage;
+
+      if (axios.isAxiosError(error)) {
+        if (error.response) {
+          // Check if the error message indicates a unique constraint violation
+          if (error.response.data.non_field_errors) {
+            errorMessage =
+              languageText.existingAlert;
+          } else {
+            // General error response
+            errorMessage =
+              error.response.data.detail || languageText.defaultErrorMessage;
+          }
+        } else if (error.request) {
+          // No response received
+          errorMessage =
+            languageText.noResponseFromServer;
+        }
+      } else {
+        // Non-Axios or general error
+        errorMessage = (error as Error).message;
+      }
+
+      // Show the error message in custom alert
+      setAlertTitle(languageText.errorTitle);
+      setAlertMessage(errorMessage);
+      setAlertVisible(true); // Show custom alert
+    }
   };
 
   const handleClear = useCallback(() => {
@@ -197,7 +276,7 @@ const YogaPage: React.FC<WalkingProps> = ({ navigation }) => {
     setDurationMinutes("");
   }, []); // Empty dependency array means this function won't change unless the component unmounts.
 
-  const handleCancel = useCallback(() => {
+ /*  const handleCancel = useCallback(() => {
     Alert.alert(
       languageText.confirmCancelTitle,
       languageText.confirmCancelMessage,
@@ -210,8 +289,11 @@ const YogaPage: React.FC<WalkingProps> = ({ navigation }) => {
       ],
       { cancelable: false }
     );
-  }, [navigation]);
-
+  }, [navigation]); */
+  const handleCancel = () => {
+    // Trigger the custom alert instead of the default Alert
+    setCancelAlertVisible(true);
+  };
   // Handle Translation
   const handleTranslate = useCallback(() => {
     setIsTranslatingToTamil((prev) => !prev);
@@ -232,6 +314,51 @@ const YogaPage: React.FC<WalkingProps> = ({ navigation }) => {
 
   return (
     <SafeAreaProvider>
+       <CustomAlert
+        title={languageText.alertCancelTitle}
+        message={languageText.alertCancelMessage}
+        visible={cancelAlertVisible}
+        onClose={() => setCancelAlertVisible(false)} // Close the alert on close
+        mode="confirm"
+        onYes={() => {
+          // Navigate to PatientDashboardPage when "Yes" is clicked
+          navigation.navigate("PatientDashboardPage");
+          setCancelAlertVisible(false); // Close the alert after navigation
+        }}
+        onNo={() => setCancelAlertVisible(false)} // Close the alert on "No"
+        okText={languageText.alertOk} // Translated OK text
+        yesText={languageText.alertYes} // Translated Yes text
+        noText={languageText.alertNo} // Translated No text
+      />
+      <CustomAlert
+        title={alertTitle}
+        message={alertMessage}
+        visible={alertVisible}
+        onClose={() => {
+          setAlertVisible(false); // Close the alert
+          if (alertTitle === "Success") {
+            navigation.navigate("LifestyleMonitoring"); // Navigate to the desired screen on success
+          }
+        }}
+        okText={languageText.alertOk} // Translated OK text
+        yesText={languageText.alertYes} // Translated Yes text
+        noText={languageText.alertNo} // Translated No text
+      />
+
+      <CustomAlert
+        title={alertTitle}
+        message={alertMessage}
+        visible={customAlertVisible}
+        onClose={() => {
+          setCustomAlertVisible(false); // Close the alert
+          if (alertMode === "success") {
+            navigation.navigate("PatientMedication"); // Navigate on success
+          }
+        }}
+        okText={languageText.alertOk} // Translated OK text
+        yesText={languageText.alertYes} // Translated Yes text
+        noText={languageText.alertNo} // Translated No text
+      />
       <SafeAreaView style={styles.safeArea}>
         {/* Adjust StatusBar visibility */}
         <StatusBar

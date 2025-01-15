@@ -11,7 +11,12 @@ type CustomAlertProps = {
   mode?: 'ok' | 'confirm';  // 'ok' for single button, 'confirm' for Yes/No
   onYes?: () => void;
   onNo?: () => void;
+  okText?: string;  // Optional text for OK button
+  yesText?: string; // Optional text for Yes button
+  noText?: string;  // Optional text for No button
+  englishOkText?: string;
 };
+
 
 const CustomAlert: React.FC<CustomAlertProps> = ({ 
   title, 
@@ -21,7 +26,11 @@ const CustomAlert: React.FC<CustomAlertProps> = ({
   onOk,
   mode = 'ok',
   onYes,
-  onNo
+  onNo,
+  englishOkText,
+  okText = 'OK',  // Default text for OK button
+  yesText = 'Yes', // Default text for Yes button
+  noText = 'No'  // Default text for No button
 }) => {
   const handleOk = () => {
     if (visible) {
@@ -43,6 +52,8 @@ const CustomAlert: React.FC<CustomAlertProps> = ({
       onClose();
     }
   };
+   // Correctly determine the OK button text with optional chaining
+   const displayOkText = okText ?? (englishOkText ?? "OK");
 
   return (
     <Modal
@@ -63,7 +74,7 @@ const CustomAlert: React.FC<CustomAlertProps> = ({
               onPress={handleOk}
               activeOpacity={0.8}
             >
-              <Text style={styles.buttonText}>OK</Text>
+              <Text style={styles.buttonText}>{okText}</Text>
             </TouchableOpacity>
           ) : (
             // Yes/No buttons
@@ -73,14 +84,14 @@ const CustomAlert: React.FC<CustomAlertProps> = ({
                 onPress={handleNo}
                 activeOpacity={0.8}
               >
-                <Text style={styles.buttonText}>No</Text>
+                <Text style={styles.buttonText}>{noText}</Text>
               </TouchableOpacity>
               <TouchableOpacity 
                 style={[styles.button, styles.yesButton]} 
                 onPress={handleYes}
                 activeOpacity={0.8}
               >
-                <Text style={styles.buttonText}>Yes</Text>
+                <Text style={styles.buttonText}>{yesText}</Text>
               </TouchableOpacity>
             </View>
           )}

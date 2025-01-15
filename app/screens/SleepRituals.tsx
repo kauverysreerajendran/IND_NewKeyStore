@@ -14,10 +14,10 @@ import {
   Alert,
   SafeAreaViewBase,
   StatusBar,
-  BackHandler
+  BackHandler,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useNavigation } from "@react-navigation/native";
@@ -26,10 +26,12 @@ import { RootStackParamList } from "../../type";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import texts from "../translation/texts";
+import CustomAlert from "../components/CustomAlert";
 
-// Custom Text component to disable font scaling globally 
-const Text = (props: any) => { return <RNText {...props} allowFontScaling={false} />; };
-
+// Custom Text component to disable font scaling globally
+const Text = (props: any) => {
+  return <RNText {...props} allowFontScaling={false} />;
+};
 
 type SleepRitualsPageNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -60,12 +62,17 @@ const SleepRitualsPage: React.FC = () => {
   );
   const [isTranslatingToTamil, setIsTranslatingToTamil] = useState(false);
   const languageText = isTranslatingToTamil ? texts.tamil : texts.english; // Use the correct text based on translation state
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState("");
+  const [alertMessage, setAlertMessage] = useState("");
+  const [cancelAlertVisible, setCancelAlertVisible] = useState(false);
+  const [alertMode, setAlertMode] = useState<string>(""); // Initialize the alertMode state
 
-//Device back button handling
-useFocusEffect(
-  React.useCallback(() => {
-    const backAction = () => {
-      Alert.alert("Cancel", "Are you sure you want to cancel?", [
+  //Device back button handling
+  useFocusEffect(
+    React.useCallback(() => {
+      const backAction = () => {
+        /* Alert.alert("Cancel", "Are you sure you want to cancel?", [
         {
           text: "No",
           onPress: () => null,
@@ -75,18 +82,19 @@ useFocusEffect(
           text: "Yes",
           onPress: () => navigation.navigate("PatientDashboardPage"),
         },
-      ]);
-      return true;
-    };
+      ]); */
+        setCancelAlertVisible(true);
+        return true;
+      };
 
-    const backHandler = BackHandler.addEventListener(
-      "hardwareBackPress",
-      backAction
-    );
+      const backHandler = BackHandler.addEventListener(
+        "hardwareBackPress",
+        backAction
+      );
 
-    return () => backHandler.remove();
-  }, [navigation])
-);
+      return () => backHandler.remove();
+    }, [navigation])
+  );
 
   useEffect(() => {
     const fetchPhoneNumber = async () => {
@@ -181,14 +189,18 @@ useFocusEffect(
     }
   };
 
-  const handleSubmit = async () => {
+  /*  const handleSubmit = async () => {
     if (!selectedRituals.size) {
-      Alert.alert("Error", "Please enter values.", [{ text: "OK" }]);
+      //Alert.alert("Error", "Please enter values.", [{ text: "OK" }]);
+      setAlertTitle("Error");
+      setAlertMessage("Please enter values.");
       return;
     }
 
     if (!selectedDate) {
-      Alert.alert("Error", "Date is required.", [{ text: "OK" }]);
+      //Alert.alert("Error", "Date is required.", [{ text: "OK" }]);
+      setAlertTitle("Error");
+      setAlertMessage("Date is required.");
       return;
     }
 
@@ -277,6 +289,86 @@ useFocusEffect(
         [{ text: "OK" }]
       );
     }
+  }; */
+
+  const handleSubmit = async () => {
+    if (!selectedRituals.size) {
+      setAlertTitle(languageText.alertErrorTitle);
+      setAlertMessage(languageText.alertErrorMessage);
+      setAlertVisible(true); // Display the custom alert
+      return;
+    }
+
+    if (!selectedDate) {
+      setAlertTitle(languageText.alertErrorTitle);
+      setAlertMessage(languageText.dateRequired);
+      setAlertVisible(true); // Display the custom alert
+      return;
+    }
+
+    if (patientDetails) {
+      const formattedDate = selectedDate
+        ? selectedDate.toISOString().split("T")[0]
+        : null;
+
+      const requestData = {
+        patient_id: patientDetails.patient_id,
+        date: formattedDate,
+        warm_milk: selectedRituals.has(languageText.warmMilk),
+        foot_massage: selectedRituals.has(languageText.footMassage),
+        quiet_environment: selectedRituals.has(languageText.quietEnvironment),
+        screen_time_management: selectedRituals.has(
+          languageText.screenTimeManagement
+        ),
+        bedtime_regularity: selectedRituals.has(languageText.bedtimeRegularity),
+        sleep_breaks: savedBreaks || 0,
+        nap_duration_hours: hours || 0,
+        nap_duration_minutes: minutes || 0,
+      };
+
+      try {
+        const response = await axios.post(
+          "https://indheart.pinesphere.in/patient/sleep-rituals/",
+          requestData
+        );
+        console.log("Rituals saved successfully:", response.data);
+
+        // Success alert
+        setAlertTitle(languageText.successTitle);
+        setAlertMessage(languageText.sleepSuccessAlertMessage);
+        setAlertMode("success"); // Set alert mode to "success"
+        setAlertVisible(true); // Display the custom alert
+      } catch (error) {
+        if (axios.isAxiosError(error)) {
+          const errorMessages = error.response?.data || {};
+          if (
+            errorMessages.non_field_errors &&
+            errorMessages.non_field_errors.includes(
+              "The fields patient_id, date must make a unique set."
+            )
+          ) {
+            setAlertTitle(languageText.errorTitle);
+            setAlertMessage(languageText.sleepExistingErrorMessage);
+            setAlertVisible(true); // Display the custom alert
+          } else {
+            const errorMessageText = errorMessages.non_field_errors
+              ? errorMessages.non_field_errors.join(", ")
+              : languageText.issueSavingSleep;
+            setAlertTitle(languageText.errorTitle);
+            setAlertMessage(errorMessageText);
+            setAlertVisible(true); // Display the custom alert
+          }
+        } else {
+          setAlertTitle(languageText.errorTitle);
+          setAlertMessage(languageText.unexpectedError);
+          setAlertVisible(true); // Display the custom alert
+        }
+      }
+    } else {
+      setAlertTitle(languageText.errorTitle);
+      setAlertMessage(languageText.noPatientInfoError);
+      setAlertVisible(true); // Display the custom alert
+    }
   };
 
   // Add handlers for Clear and Cancel
@@ -288,11 +380,16 @@ useFocusEffect(
     setSelectedDate(null);
   };
 
-  const handleCancel = () => {
+  /*  const handleCancel = () => {
     Alert.alert("Cancel", "Are you sure you want to cancel?", [
       { text: "No", style: "cancel" },
       { text: "Yes", onPress: () => navigation.navigate("DailyUploads") }, // Navigate to PatientDashboard
     ]);
+  }; */
+
+  const handleCancel = () => {
+    // Trigger the custom alert instead of the default Alert
+    setCancelAlertVisible(true);
   };
 
   // Update the calculation for progress
@@ -312,182 +409,275 @@ useFocusEffect(
 
   return (
     <SafeAreaProvider>
-    <SafeAreaView style={styles.container}>
-      <View style={styles.rowContainer}>
-        <Text style={styles.greeting}>
-          Hi, {patientDetails ? patientDetails.name : "Loading..."} !
-        </Text>
-      </View>
-      <View style={styles.translateContainer}>
-        <TouchableOpacity
-          onPress={handleTranslate}
-          style={styles.translateButton}
-        >
-          <Icon
-            name={isTranslatingToTamil ? "language" : "translate"}
-            size={20}
-            color="#4169E1"
-            style={styles.icon}
-          />
-          <Text style={styles.buttonTranslateText}>
-            {isTranslatingToTamil ? "Translate to English" : "தமிழில் படிக்க"}
+      <CustomAlert
+        title={alertTitle}
+        message={alertMessage}
+        visible={alertVisible}
+        onClose={() => {
+          console.log("Alert closed");
+          setAlertVisible(false); // Close the alert
+          if (alertMode === "success" && patientDetails) {
+            console.log(
+              "Navigating based on patient diet:",
+              patientDetails.diet
+            );
+
+            // Navigate based on diet value when the alert is closed
+            if (
+              patientDetails.diet === "Both" ||
+              patientDetails.diet === "Vegetarian"
+            ) {
+              console.log("Navigating to VegDietPage");
+              navigation.navigate("VegDietPage");
+            } else if (patientDetails.diet === "Non-Vegetarian") {
+              console.log("Navigating to NonVegDietPage");
+              navigation.navigate("NonVegDietPage");
+            } else {
+              console.warn("Unexpected diet value:", patientDetails.diet);
+            }
+          } else {
+            console.warn("No patient details or alert mode is not success");
+          }
+        }}
+        onYes={() => {
+          console.log("Alert confirmed");
+          console.log("Alert Mode:", alertMode); // Log the current alert mode
+          console.log("Patient Details:", patientDetails); // Log the patient details
+
+          setAlertVisible(false); // Close the alert
+          if (alertMode === "success" && patientDetails) {
+            console.log(
+              "Navigating based on patient diet:",
+              patientDetails.diet
+            );
+
+            // Navigate based on diet value when the alert is confirmed
+            if (
+              patientDetails.diet === "Both" ||
+              patientDetails.diet === "Vegetarian"
+            ) {
+              console.log("Navigating to VegDietPage");
+              navigation.navigate("VegDietPage");
+            } else if (patientDetails.diet === "Non-Vegetarian") {
+              console.log("Navigating to NonVegDietPage");
+              navigation.navigate("NonVegDietPage");
+            } else {
+              console.warn("Unexpected diet value:", patientDetails.diet);
+            }
+          } else {
+            console.warn("No patient details or alert mode is not success");
+          }
+        }}
+        onOk={() => {
+          console.log("Alert OK clicked");
+          setAlertVisible(false); // Close the alert
+
+          // You can optionally add any additional action here, if necessary.
+        }}
+        okText={languageText.alertOk} // Translated OK text
+        yesText={languageText.alertYes} // Translated Yes text
+        noText={languageText.alertNo} // Translated No text
+      />
+
+      <CustomAlert
+        title={languageText.alertCancelTitle}
+        message={languageText.alertCancelMessage}
+        visible={cancelAlertVisible}
+        onClose={() => setCancelAlertVisible(false)}
+        mode="confirm"
+        onYes={() => {
+          // Ensure that navigation happens when "Yes" is clicked
+          navigation.navigate("PatientDashboardPage"); // Navigate to PatientDashboardPage
+        }}
+        onNo={() => setCancelAlertVisible(false)} // Close the alert on No
+        yesText={languageText.alertYes} // Translated Yes text
+        noText={languageText.alertNo} // Translated No text
+      />
+      <SafeAreaView style={styles.container}>
+        <View style={styles.rowContainer}>
+          <Text style={styles.greeting}>
+            Hi, {patientDetails ? patientDetails.name : "Loading..."} !
           </Text>
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView
-        contentContainerStyle={styles.scrollContainer}
-        showsVerticalScrollIndicator={false}
-        showsHorizontalScrollIndicator={false}
-      >
-        <View style={styles.topContainer}>
-          <Image
-            source={require("../../assets/images/sleeping.jpg")}
-            style={styles.topImage}
-          />
-          <View style={styles.textOverlay}>
-            <Text style={styles.topText}>{languageText.evaluateSleep}</Text>
-            <Text style={styles.topSubText}>{languageText.sleepPattern}</Text>
-          </View>
         </View>
-
-        {/* Date Picker Field with Image */}
-        <View style={styles.datePickerContainer}>
-          <Image
-            source={require("../../assets/images/calendar.png")}
-            style={styles.datePickerImage}
-          />
+        <View style={styles.translateContainer}>
           <TouchableOpacity
-            onPress={() => setShowDatePicker(true)}
-            style={styles.datePickerField}
+            onPress={handleTranslate}
+            style={styles.translateButton}
           >
-            <Text style={styles.datePickerText}>
-              {selectedDate ? selectedDate.toDateString() :  languageText.selectDate}
+            <Icon
+              name={isTranslatingToTamil ? "language" : "translate"}
+              size={20}
+              color="#4169E1"
+              style={styles.icon}
+            />
+            <Text style={styles.buttonTranslateText}>
+              {isTranslatingToTamil ? "Translate to English" : "தமிழில் படிக்க"}
             </Text>
           </TouchableOpacity>
         </View>
 
-        {/* DateTimePicker */}
-        {showDatePicker && (
-  <View style={styles.datePickerWrapper}>
-    <DateTimePicker
-      value={selectedDate || new Date()}
-      mode="date"
-      display={Platform.OS === "ios" ? "inline" : "calendar"}
-      onChange={handleDateChange}
-      style={Platform.OS === "ios" ? styles.iosDatePicker : undefined}
-    />
-  </View>
-)}
+        <ScrollView
+          contentContainerStyle={styles.scrollContainer}
+          showsVerticalScrollIndicator={false}
+          showsHorizontalScrollIndicator={false}
+        >
+          <View style={styles.topContainer}>
+            <Image
+              source={require("../../assets/images/sleeping.jpg")}
+              style={styles.topImage}
+            />
+            <View style={styles.textOverlay}>
+              <Text style={styles.topText}>{languageText.evaluateSleep}</Text>
+              <Text style={styles.topSubText}>{languageText.sleepPattern}</Text>
+            </View>
+          </View>
 
-
-        {/* Sleep Interventions  */}
-        <View style={styles.ritualsContainer}>
-          <Text style={styles.optionTitle}>
-            {languageText.selectSleepInterventions}
-          </Text>
-          {rituals.map((ritual) => (
+          {/* Date Picker Field with Image */}
+          <View style={styles.datePickerContainer}>
+            <Image
+              source={require("../../assets/images/calendar.png")}
+              style={styles.datePickerImage}
+            />
             <TouchableOpacity
-              key={ritual.name}
-              style={[
-                styles.ritualItem,
-                selectedRituals.has(ritual.name) && styles.selectedRitual,
-              ]}
-              onPress={() => handleRitualToggle(ritual.name)}
+              onPress={() => setShowDatePicker(true)}
+              style={styles.datePickerField}
             >
-              <Icon
-                name={ritual.icon}
-                size={24}
-                color={selectedRituals.has(ritual.name) ? "#4CAF50" : "#A9A9A9"}
+              <Text style={styles.datePickerText}>
+                {selectedDate
+                  ? selectedDate.toDateString()
+                  : languageText.selectDate}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* DateTimePicker */}
+          {showDatePicker && (
+            <View style={styles.datePickerWrapper}>
+              <DateTimePicker
+                value={selectedDate || new Date()}
+                mode="date"
+                display={Platform.OS === "ios" ? "inline" : "calendar"}
+                onChange={handleDateChange}
+                style={Platform.OS === "ios" ? styles.iosDatePicker : undefined}
               />
-              <Text style={styles.ritualText}>{ritual.name}</Text>
-              {selectedRituals.has(ritual.name) && (
+            </View>
+          )}
+
+          {/* Sleep Interventions  */}
+          <View style={styles.ritualsContainer}>
+            <Text style={styles.optionTitle}>
+              {languageText.selectSleepInterventions}
+            </Text>
+            {rituals.map((ritual) => (
+              <TouchableOpacity
+                key={ritual.name}
+                style={[
+                  styles.ritualItem,
+                  selectedRituals.has(ritual.name) && styles.selectedRitual,
+                ]}
+                onPress={() => handleRitualToggle(ritual.name)}
+              >
                 <Icon
-                  name="check"
-                  size={20}
-                  color="#4CAF50"
-                  style={styles.checkmarkIcon}
+                  name={ritual.icon}
+                  size={24}
+                  color={
+                    selectedRituals.has(ritual.name) ? "#4CAF50" : "#A9A9A9"
+                  }
                 />
-              )}
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Sleep Breaks */}
-        <Text style={styles.breakTitle}>{languageText.selectSleepBreaks}</Text>
-        <View style={styles.breaksSelectorContainer}>
-          <Image
-            source={require("../../assets/images/clock.png")}
-            style={styles.breaksImage}
-          />
-          <View style={styles.breaksControlContainer}>
-            <TouchableOpacity
-              onPress={handleDecrement}
-              style={styles.controlButtonMinus}
-            >
-              <Icon name="remove" size={18} color="#fff" />
-            </TouchableOpacity>
-            <Text style={styles.breaksCount}>{selectedBreaks}</Text>
-            <TouchableOpacity
-              onPress={handleIncrement}
-              style={styles.controlButtonPlus}
-            >
-              <Icon name="add" size={18} color="#fff" />
-            </TouchableOpacity>
+                <Text style={styles.ritualText}>{ritual.name}</Text>
+                {selectedRituals.has(ritual.name) && (
+                  <Icon
+                    name="check"
+                    size={20}
+                    color="#4CAF50"
+                    style={styles.checkmarkIcon}
+                  />
+                )}
+              </TouchableOpacity>
+            ))}
           </View>
-        </View>
 
-        {/* Nap Duration */}
-        <Text style={styles.napTitle}>{languageText.enterNapDuration}</Text>
-        <View style={styles.napDurationContainer}>
-          <Image
-            source={require("../../assets/images/sleep.png")}
-            style={styles.durationImage}
-          />
-          <View style={styles.breaksControlContainer}>
-            <TextInput
-              style={styles.timeInput}
-              placeholder="HH"
-              keyboardType="numeric"
-              maxLength={2}
-              onChangeText={(text) => setHours(text)}
-              value={hours}
+          {/* Sleep Breaks */}
+          <Text style={styles.breakTitle}>
+            {languageText.selectSleepBreaks}
+          </Text>
+          <View style={styles.breaksSelectorContainer}>
+            <Image
+              source={require("../../assets/images/clock.png")}
+              style={styles.breaksImage}
             />
-            <Text style={styles.timeSeparator}>:</Text>
-            <TextInput
-              style={styles.timeInput}
-              placeholder="MM"
-              keyboardType="numeric"
-              maxLength={2}
-              onChangeText={(text) => setMinutes(text)}
-              value={minutes}
+            <View style={styles.breaksControlContainer}>
+              <TouchableOpacity
+                onPress={handleDecrement}
+                style={styles.controlButtonMinus}
+              >
+                <Icon name="remove" size={18} color="#fff" />
+              </TouchableOpacity>
+              <Text style={styles.breaksCount}>{selectedBreaks}</Text>
+              <TouchableOpacity
+                onPress={handleIncrement}
+                style={styles.controlButtonPlus}
+              >
+                <Icon name="add" size={18} color="#fff" />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Nap Duration */}
+          <Text style={styles.napTitle}>{languageText.enterNapDuration}</Text>
+          <View style={styles.napDurationContainer}>
+            <Image
+              source={require("../../assets/images/sleep.png")}
+              style={styles.durationImage}
+            />
+            <View style={styles.breaksControlContainer}>
+              <TextInput
+                style={[styles.timeInput, { textAlign: "left" }]}
+                placeholder="HH"
+                placeholderTextColor="#d3d3d3"
+                keyboardType="numeric"
+                maxLength={2}
+                onChangeText={(text) => setHours(text)}
+                value={hours}
+                selectionColor="white"
+              />
+              <Text style={styles.timeSeparator}>:</Text>
+              <TextInput
+                style={[styles.timeInput, { textAlign: "left" }]}
+                placeholder="MM"
+                placeholderTextColor="#d3d3d3"
+                keyboardType="numeric"
+                maxLength={2}
+                onChangeText={(text) => setMinutes(text)}
+                value={minutes}
+                selectionColor="white"
+              />
+            </View>
+          </View>
+
+          {/* Progress Bar */}
+          <View style={styles.progressBarContainer}>
+            <View
+              style={[
+                styles.progressBar,
+                { width: `${progress}%`, backgroundColor: progressColor },
+              ]}
             />
           </View>
+        </ScrollView>
+        {/* Footer Buttons */}
+        <View style={styles.footer}>
+          <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
+            <Text style={styles.footerButtonText}>{languageText.submit}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.clearButton} onPress={handleClear}>
+            <Text style={styles.footerButtonText}>{languageText.clear}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
+            <Text style={styles.footerButtonText}>{languageText.cancel}</Text>
+          </TouchableOpacity>
         </View>
-
-        {/* Progress Bar */}
-        <View style={styles.progressBarContainer}>
-          <View
-            style={[
-              styles.progressBar,
-              { width: `${progress}%`, backgroundColor: progressColor },
-            ]}
-          />
-        </View>
-      </ScrollView>
-      {/* Footer Buttons */}
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-          <Text style={styles.footerButtonText}>{languageText.submit}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.clearButton} onPress={handleClear}>
-          <Text style={styles.footerButtonText}>{languageText.clear}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
-          <Text style={styles.footerButtonText}>{languageText.cancel}</Text>
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
     </SafeAreaProvider>
   );
 };
@@ -536,7 +726,7 @@ const styles = StyleSheet.create({
     left: "10%",
   },
   topText: {
-    fontSize: 22,
+    fontSize: 16,
     fontWeight: "bold",
     color: "#CD5C5C",
     marginBottom: 3,
@@ -544,15 +734,15 @@ const styles = StyleSheet.create({
     bottom: 65,
   },
   datePickerWrapper: {
-    width: Dimensions.get('window').width * 0.9, // Ensures the calendar fits within 90% of the screen width
+    width: Dimensions.get("window").width * 0.9, // Ensures the calendar fits within 90% of the screen width
     alignItems: "center",
     justifyContent: "center",
-    padding: 10,  // Ensures enough padding on iOS
+    padding: 10, // Ensures enough padding on iOS
     marginVertical: 20, // Provides space around the calendar to avoid overlap
   },
   iosDatePicker: {
-    width: Dimensions.get("window").width - 40,  // Adjust to fit the screen
-    height: 300,  // Set a specific height for better visibility
+    width: Dimensions.get("window").width - 40, // Adjust to fit the screen
+    height: 300, // Set a specific height for better visibility
   },
   datePickerField: {
     width: "50%",
@@ -578,19 +768,18 @@ const styles = StyleSheet.create({
     left: 55,
   },
   topSubText: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: "600",
     color: "#ffffff",
     right: 15,
     bottom: 65,
   },
 
-
   optionTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "bold",
     right: -8,
-    bottom: 25,
+    bottom: 30,
   },
   saveButtonText: {
     color: "#FFFFFF",
@@ -748,7 +937,7 @@ const styles = StyleSheet.create({
     bottom: 2,
     right: 20,
     padding: 10,
-    alignSelf: 'center'
+    alignSelf: "center",
   },
   controlButtonPlus: {
     backgroundColor: "#4CAF50",
@@ -795,24 +984,22 @@ const styles = StyleSheet.create({
 
   timeInput: {
     flex: 1,
-    width: 50,
-    height: 40,
-    borderColor: "#ddd",
-    backgroundColor: "#1E90FF",
-    borderWidth: 1,
+    width: 50, // Adjust the width to fit your layout needs
+    height: 40, // Adjust the height to fit your layout needs
+    alignSelf: "center", // Center the input field horizontally
+    backgroundColor: "#2281e6",
     borderRadius: 30,
-    textAlign: "left",
-    fontSize: 16,
-    marginHorizontal: 5,
+    textAlign: "center", // Center the text inside the input field
+    fontSize: 12, // Adjust the font size as needed
+    marginHorizontal: 5, // Space between the inputs
     color: "#fff",
     padding: 10,
-    alignSelf: "center",
     alignItems: "center",
-    marginLeft: 30,
-    paddingLeft: 10,
+    marginLeft: 30, // Adjust the left margin as needed
+    paddingLeft: 10, // Padding for inner text alignment
   },
   timeSeparator: {
-    fontSize: 16,
+    fontSize: 14,
     color: "#fff",
   },
   resultText: {

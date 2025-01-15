@@ -253,22 +253,21 @@ const DailyExercise: React.FC<DailyExerciseProps> = ({ navigation }) => {
         if (error.response && error.response.status === 400) {
           // Check if the error is due to a unique constraint violation
           const errorMessage =
-            error.response.data?.message ||
-            "Data for this date already exists. Please choose different date";
+            error.response.data?.message || languageText.existingAlert;
           //Alert.alert("Duplicate Entry", errorMessage);
-          setAlertTitle("Duplicate Entry");
+          setAlertTitle(languageText.duplicateEntry);
           setAlertMessage(errorMessage);
         } else {
           //Alert.alert("Error", "There was an issue saving the data");
-          setAlertTitle("Error");
-          setAlertMessage("There was an issue saving the data");
+          setAlertTitle(languageText.errorTitle);
+          setAlertMessage(languageText.errorSaving);
         }
       }
     } else {
       //
       //Alert.alert("Missing required fields", "Please select a date.");
-      setAlertTitle("Missing required fields");
-      setAlertMessage("Please select a date.");
+      setAlertTitle(languageText.missingAlert);
+      setAlertMessage(languageText.selectDate);
     }
   };
 
@@ -320,6 +319,9 @@ const DailyExercise: React.FC<DailyExerciseProps> = ({ navigation }) => {
         onYes={() => navigation.navigate("Exercise")} // Handles "Yes" button
         onNo={() => setCancelAlertVisible(false)} // Handles "No" button
         mode="confirm" // Optionally specify "confirm" for Yes/No buttons
+        okText={languageText.alertOk} // Translated OK text
+        yesText={languageText.alertYes} // Translated Yes text
+        noText={languageText.alertNo} // Translated No text
       />
 
       {/* CustomAlert for success confirmation */}
@@ -333,6 +335,9 @@ const DailyExercise: React.FC<DailyExerciseProps> = ({ navigation }) => {
           setSuccessAlertVisible(false);
           navigation.navigate("Walking"); // Adjust the name if necessary
         }}
+        okText={languageText.alertOk} // Translated OK text
+        yesText={languageText.alertYes} // Translated Yes text
+        noText={languageText.alertNo} // Translated No text
       />
 
       <View style={styles.translateContainer}>

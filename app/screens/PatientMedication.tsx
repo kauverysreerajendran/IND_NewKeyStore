@@ -21,9 +21,11 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { AxiosError } from "axios";
 import texts from "../translation/texts";
-// Custom Text component to disable font scaling globally 
-const Text = (props: any) => { return <RNText {...props} allowFontScaling={false} />; };
-
+import CustomAlert from "../components/CustomAlert";
+// Custom Text component to disable font scaling globally
+const Text = (props: any) => {
+  return <RNText {...props} allowFontScaling={false} />;
+};
 
 type TimeOfDay = "Morning" | "Afternoon" | "Evening" | "Night";
 
@@ -60,6 +62,7 @@ const PatientMedication: React.FC = () => {
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [activeTime, setActiveTime] = useState("");
+  const [customAlertVisible, setCustomAlertVisible] = useState(false);
   const [selectedMedications, setSelectedMedications] =
     useState<SelectedMedicationsState>({
       Morning: [],
@@ -73,6 +76,13 @@ const PatientMedication: React.FC = () => {
 
   // Toggle between Tamil and English based on the button click
   const languageText = isTranslatingToTamil ? texts.tamil : texts.english;
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState("");
+  const [alertMessage, setAlertMessage] = useState("");
+  const [alertMode, setAlertMode] = useState<
+    "success" | "error" | "confirm" | null
+  >(null); // Define the possible modes
+  const [cancelAlertVisible, setCancelAlertVisible] = useState(false);
 
   // Handle Translation
   const handleTranslate = () => {
@@ -121,7 +131,11 @@ const PatientMedication: React.FC = () => {
 
   const handleSubmit = useCallback(async () => {
     if (!date) {
-      Alert.alert("Missing required fields", "Please select a date.");
+      //Alert.alert("Missing required fields", "Please select a date.");
+      setAlertTitle(languageText.medicationSuccessAlert);
+      setAlertMessage(languageText.selectDate);
+      setCustomAlertVisible(true); // Show custom alert
+
       return;
     }
 
@@ -173,7 +187,9 @@ const PatientMedication: React.FC = () => {
       });
 
       if (errors.length > 0) {
-        Alert.alert("Duplicate Entry", errors.join("\n"));
+        //Alert.alert("Duplicate Entry", errors.join("\n"));
+        setAlertTitle(languageText.duplicateEntry);
+        setAlertMessage(errors.join("\n"));
         return;
       }
 
@@ -186,20 +202,29 @@ const PatientMedication: React.FC = () => {
       );
 
       console.log("Response from server:", response.data);
-      Alert.alert("Success", "Medication details saved successfully.", [
+      /*  Alert.alert("Success", "Medication details saved successfully.", [
         {
           text: "OK",
           onPress: () => navigation.navigate("DailyExercise"), // Redirect to the Dashboard
         },
-      ]);    } catch (error: any) {
+      ]);   */
+      setAlertTitle(languageText.alertSuccessTitle);
+      setAlertMessage(languageText.medicationSuccessAlert);
+      setAlertVisible(true);
+      setAlertMode("success");
+    } catch (error: any) {
       // Handle duplicate entry or other errors
       if (error.response && error.response.status === 400) {
         // Check if the error is due to a unique constraint violation
         const errorMessage =
-          error.response.data?.detail || "Data for this date already exists.";
-        Alert.alert("Duplicate Entry", errorMessage);
+          error.response.data?.detail || languageText.alreadyExists;
+        //Alert.alert("Duplicate Entry", errorMessage);
+        setAlertTitle(languageText.duplicateEntry);
+        setAlertMessage(errorMessage);
       } else {
-        Alert.alert("Error", "There was an issue saving the data");
+        //Alert.alert("Error", "There was an issue saving the data");
+        setAlertTitle(languageText.alertErrorTitle);
+        setAlertMessage(languageText.errorSaving);
       }
     }
   }, [date, medications, selectedMedications]);
@@ -211,16 +236,21 @@ const PatientMedication: React.FC = () => {
       Evening: [],
       Night: [],
     });
-    Alert.alert("Cleared", "Your data has been cleared successfully.");
+    //Alert.alert("Cleared", "Your data has been cleared successfully.");
+    setAlertTitle(languageText.clearTitle);
+    setAlertMessage(languageText.clearedMessage);
   }, []);
 
-  const handleCancel = () => {
+  /* const handleCancel = () => {
     Alert.alert("Cancel", "Are you sure you want to cancel?", [
       { text: "No", style: "cancel" },
       { text: "Yes", onPress: () => navigation.navigate("DailyUploads") }, // Navigate to PatientDashboard
     ]);
+  }; */
+  const handleCancel = () => {
+    // Trigger the custom alert instead of the default Alert
+    setCancelAlertVisible(true);
   };
-
   const updateActiveTime = () => {
     const hours = new Date().getHours();
     if (hours < 12) {
@@ -263,6 +293,44 @@ const PatientMedication: React.FC = () => {
 
   return (
     <SafeAreaProvider>
+      {/* Custom alert for cancel action */}
+      <CustomAlert
+        title={languageText.alertCancelTitle}
+        message={languageText.alertCancelMessage}
+        visible={cancelAlertVisible}
+        onClose={() => setCancelAlertVisible(false)}
+        mode="confirm"
+        onYes={() => {
+          navigation.navigate("PatientDashboardPage"); // Navigate to PatientDashboardPage
+        }}
+        onNo={() => setCancelAlertVisible(false)} // Close the alert on No
+        okText={languageText.alertOk} // Translated OK text
+        yesText={languageText.alertYes} // Translated Yes text
+        noText={languageText.alertNo} // Translated No text
+      />
+
+      {/* Success Custom Alert */}
+      <CustomAlert
+        title={alertTitle}
+        message={alertMessage}
+        visible={alertVisible}
+        onClose={() => {
+          setAlertVisible(false); // Close the alert
+          if (alertMode === "success") {
+            navigation.navigate("DailyExercise"); // Redirect to the Dashboard
+          }
+        }}
+        onYes={() => {
+          setAlertVisible(false); // Close the alert
+          if (alertMode === "success") {
+            navigation.navigate("DailyExercise"); // Redirect to the Dashboard
+          }
+        }}
+        okText={languageText.alertOk} // Translated OK text
+        yesText={languageText.alertYes} // Translated Yes text
+        noText={languageText.alertNo} // Translated No text
+      />
+
       <SafeAreaView style={styles.safeArea}>
         {/* Adjust StatusBar visibility */}
         <StatusBar
@@ -346,7 +414,7 @@ const PatientMedication: React.FC = () => {
                     {medications.filter((med) => med.drug_take === timeOfDay)
                       .length === 0 ? (
                       <Text style={styles.noDataText}>
-                        No medication data available for{" "}
+                        {languageText.noMedicationDataText}{" "}
                         {timeOfDay.toLowerCase()}.
                       </Text>
                     ) : (
@@ -416,9 +484,9 @@ const PatientMedication: React.FC = () => {
                     )}
                   </View>
                   <View style={styles.noteContainer}>
-                    <Text style={styles.noteText}>Note:</Text>
+                    <Text style={styles.noteText}>{languageText.note}</Text>
                     <Text style={styles.noteContent}>
-                      Please take your medication at the scheduled time.
+                      {languageText.medicationNote}
                     </Text>
                   </View>
 
@@ -486,7 +554,7 @@ const styles = StyleSheet.create({
     marginBottom: -10,
   },
   title: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: "bold",
     color: "#36454F",
     textAlign: "center",
@@ -559,11 +627,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
-  tileText: {
-    fontSize: 16,
-    fontWeight: "bold",
-    marginRight: 15,
-  },
   activeTile: {
     backgroundColor: "#fff",
   },
@@ -583,7 +646,7 @@ const styles = StyleSheet.create({
     width: "100%", // Full width of the container
   },
   morningMedicationText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "700",
     marginVertical: 0,
     textAlign: "left",
@@ -631,12 +694,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   medicationItem: {
-    fontSize: 18,
+    fontSize: 16,
   },
   medicationDetails: {
-    fontSize: 16,
-    color: "#808080",
-    fontWeight: "700",
+    fontSize: 14,
+    color: "#457aec",
+    fontWeight: "600",
     marginBottom: 5,
     marginTop: 5,
     marginVertical: 5,
@@ -718,8 +781,8 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   noDataText: {
-    fontSize: 16,
-    color: "gray",
+    fontSize: 14,
+    color: "#f76464",
     textAlign: "center",
     paddingVertical: 10,
   },
@@ -732,10 +795,10 @@ const styles = StyleSheet.create({
   dateText: {
     fontWeight: "700",
     color: "#505050",
-    fontSize: 15,
+    fontSize: 14,
     flexWrap: "wrap", // Allow text to wrap within its container
     textAlign: "left", // Align text to the left for better readability
-    width: "100%", // Ensure it takes full width of the container
+    width: "100%",
   },
 });
 
